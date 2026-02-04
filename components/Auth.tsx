@@ -254,9 +254,9 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
       let msg = err.message;
 
       // Translate Errors
-      if (msg.includes('Email not confirmed')) msg = 'الحساب غير مُفعّل. فعّل البريد الإلكتروني أو عطّل تأكيد البريد من إعدادات Supabase.';
+      if (msg.includes('Email not confirmed')) msg = 'الرقم التعريفي أو كلمة المرور غير صحيحة';
       else if (msg.includes('Email logins are disabled')) msg = 'تسجيل الدخول بالبريد الإلكتروني متعطّل من إعدادات Supabase. فعّل Email Provider من Authentication ثم جرّب مرة أخرى.';
-      else if (msg === 'Invalid login credentials' || msg.includes('Invalid')) msg = 'بيانات الدخول غير صحيحة (تأكد من الرقم وكلمة المرور، أو قم بإنشاء حساب جديد أولاً)';
+      else if (msg === 'Invalid login credentials' || msg.includes('Invalid')) msg = 'الرقم التعريفي أو كلمة المرور غير صحيحة';
       else if (msg.includes('Email address') || msg.includes('validation')) msg = 'رقم الهوية غير صالح (تأكد من الأرقام وعدم وجود مسافات)';
       else if (msg.includes('User already registered')) msg = 'هذا الحساب مسجل بالفعل، حاول تسجيل الدخول';
       else if (msg.includes('Password should be')) msg = 'كلمة المرور ضعيفة (يجب أن تكون 6 أحرف على الأقل)';
