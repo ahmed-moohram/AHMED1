@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, BookOpen, Plus, Trash2, Edit3, X, Save, Video, LogOut, Copy, KeyRound } from 'lucide-react';
+import { Users, BookOpen, Plus, Trash2, Edit3, X, Save, Video, LogOut, Copy, KeyRound, MessagesSquare } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Course, Lesson, UserProfile } from '../types';
 import { COURSES as MOCK_COURSES } from '../constants';
+import AdminMessages from './AdminMessages';
 
 interface AdminDashboardProps {
     onLogout: () => void;
@@ -14,7 +15,7 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, showAllUsers }) => {
     const STUDENTS_PAGE_SIZE = 10;
 
-    const [activeTab, setActiveTab] = useState<'students' | 'courses'>(initialTab || 'courses');
+    const [activeTab, setActiveTab] = useState<'students' | 'courses' | 'messages'>(initialTab || 'courses');
     const [students, setStudents] = useState<UserProfile[]>([]);
     const [studentsTotal, setStudentsTotal] = useState<number | null>(null);
     const [studentsPage, setStudentsPage] = useState(0);
@@ -317,7 +318,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                  alert(`تم تعيين كلمة السر: ${newPassword}`);
              }
          } catch (e: any) {
-             alert(e?.message || 'فشل تعيين كلمة السر');
+            const raw = String(e?.message || e?.error || '').toLowerCase();
+            const isNotFound = raw.includes('requested function was not found') || raw.includes('not_found') || raw.includes('not found');
+            const isFetchFail = raw.includes('failed to fetch') || raw.includes('network') || raw.includes('err_failed');
+            if (isNotFound) {
+                alert('ميزة إعادة تعيين كلمة السر غير مفعّلة الآن لأن Edge Function (admin-set-password) غير منشورة على Supabase. قم بعمل Deploy للـFunction ثم جرّب مرة أخرى.');
+            } else if (isFetchFail) {
+                alert('تعذر الاتصال بخدمة Supabase Functions. تأكد من الإنترنت وأن الرابط يعمل ثم جرّب مرة أخرى.');
+            } else {
+                alert(e?.message || 'فشل تعيين كلمة السر');
+            }
          }
      };
 
@@ -446,10 +456,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                         <Users size={18} className="inline-block ml-2 mb-1" />
                         الطلاب المسجلين
                     </button>
+                    <button 
+                        onClick={() => setActiveTab('messages')}
+                        className={`flex-1 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base transition-all ${activeTab === 'messages' ? 'bg-dark text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
+                    >
+                        <MessagesSquare size={18} className="inline-block ml-2 mb-1" />
+                        المسجات
+                    </button>
                 </div>
 
                 {/* Content */}
-                {activeTab === 'courses' ? (
+                {activeTab === 'messages' ? (
+                    <AdminMessages currentUserId={currentUserId} />
+                ) : activeTab === 'courses' ? (
                     <div className="space-y-6">
                         <button 
                             onClick={() => { setEditingCourse({}); setIsCourseModalOpen(true); }}

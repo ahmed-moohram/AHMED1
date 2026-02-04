@@ -9,6 +9,7 @@ import VideoPlayer from './components/VideoPlayer';
 import CourseDetail from './components/CourseDetail';
 import Auth from './components/Auth';
 import AdminDashboard from './components/AdminDashboard';
+import SupportChatWidget from './components/SupportChatWidget';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Course, Lesson, ViewState } from './types';
 import { COURSES as MOCK_COURSES } from './constants';
@@ -30,6 +31,16 @@ function App() {
   // Check Session on Mount
   useEffect(() => {
     checkSession();
+  }, []);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    const { data } = supabase.auth.onAuthStateChange(() => {
+      checkSession();
+    });
+    return () => {
+      data.subscription.unsubscribe();
+    };
   }, []);
 
   // Auto-route admin users once per app load (helps when session is restored after refresh)
@@ -451,6 +462,7 @@ function App() {
           onBack={handleBackToCourse} 
         />
       )}
+      <SupportChatWidget isAuthenticated={isAuthenticated} isAdmin={isAdmin} />
     </div>
   );
 }

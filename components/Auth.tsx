@@ -13,8 +13,18 @@ interface AuthProps {
 // --- Hyper-Realistic Eye Component (Mascot) ---
 const RealisticEye = ({ isOpen, inputValue, isFocused }: { isOpen: boolean; inputValue: string; isFocused: boolean }) => {
   return (
-    <div className="w-full h-full flex items-center justify-center drop-shadow-2xl">
-      <img src={eyeImage} alt="eye" className="w-full h-full object-contain" draggable={false} />
+    <div className="w-full h-full flex items-center justify-center">
+      <motion.div
+        className="w-full h-full rounded-full bg-gradient-to-br from-primary/80 to-secondary/80 p-[3px] shadow-[0_22px_60px_-18px_rgba(0,0,0,0.35)]"
+        animate={{
+          scale: isFocused ? 1.04 : isOpen ? 1.02 : 1,
+        }}
+        transition={{ type: 'spring', stiffness: 220, damping: 18 }}
+      >
+        <div className="w-full h-full rounded-full bg-white overflow-hidden">
+          <img src={eyeImage} alt="eye" className="w-full h-full object-cover" draggable={false} />
+        </div>
+      </motion.div>
     </div>
   );
 };
@@ -227,10 +237,10 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md bg-white border border-white/60 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] rounded-[3rem] p-8 md:p-12 relative pt-20"
+        className="w-full max-w-md bg-white border border-white/60 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] rounded-[3rem] p-8 md:p-12 relative pt-28 sm:pt-24 md:pt-20"
       >
         {/* --- Mascot Eye (Centered Top) --- */}
-        <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-32 h-32 z-20">
+        <div className="absolute -top-14 sm:-top-16 left-1/2 -translate-x-1/2 w-24 h-24 sm:w-32 sm:h-32 z-20">
             <motion.div 
                 className="w-full h-full"
                 animate={{ 

@@ -89,7 +89,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const password = `Ahmed@${studentId}`;
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+    const bytes = new Uint8Array(12);
+    crypto.getRandomValues(bytes);
+    const password = Array.from(bytes)
+      .map((b) => alphabet[b % alphabet.length])
+      .join("");
 
     const { error: setError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       password,
