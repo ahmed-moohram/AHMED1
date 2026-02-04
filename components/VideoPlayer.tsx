@@ -43,10 +43,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
 
   return (
     <div className="min-h-screen bg-background pt-24 pb-12">
-      <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-8">
         
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 sm:mb-8">
            <button 
             onClick={onBack}
             className="w-12 h-12 rounded-full bg-white border border-gray-100 flex items-center justify-center hover:bg-dark hover:text-white transition-all shadow-sm hover:shadow-lg"
@@ -58,7 +58,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
                <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
                <h2 className="text-sm font-bold text-gray-400">{course.title}</h2>
             </div>
-            <h1 className="text-2xl font-black text-dark">{lesson.title}</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-dark">{lesson.title}</h1>
           </div>
         </div>
 
@@ -97,29 +97,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                       
-                      <div className="relative z-10 flex flex-col items-center gap-6">
+                      <div className="relative z-10 flex flex-col items-center gap-5 sm:gap-6">
                         <motion.div 
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.95 }}
-                          className="w-24 h-24 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/30 shadow-[0_0_40px_rgba(255,255,255,0.3)]"
+                          className="w-20 h-20 sm:w-24 sm:h-24 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/30 shadow-[0_0_40px_rgba(255,255,255,0.3)]"
                         >
-                          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg text-dark pl-1">
+                          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white rounded-full flex items-center justify-center shadow-lg text-dark pl-1">
                              <Play fill="currentColor" size={32} />
                           </div>
                         </motion.div>
-                        <span className="text-white font-bold tracking-widest uppercase text-sm border px-4 py-1 rounded-full border-white/30 backdrop-blur-md">اضغط للمشاهدة</span>
+                        <span className="text-white font-bold tracking-widest uppercase text-xs sm:text-sm border px-4 py-1 rounded-full border-white/30 backdrop-blur-md">اضغط للمشاهدة</span>
                       </div>
                    </div>
                  )}
               </div>
 
               {/* Description */}
-              <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm">
-                 <h2 className="text-2xl font-black text-dark mb-4 flex items-center gap-2">
+              <div className="bg-white rounded-[2rem] p-5 sm:p-8 border border-gray-100 shadow-sm">
+                 <h2 className="text-xl sm:text-2xl font-black text-dark mb-4 flex items-center gap-2">
                     تفاصيل المحاضرة
                     <span className="h-2 w-2 rounded-full bg-secondary"></span>
                  </h2>
-                 <p className="text-gray-600 leading-relaxed text-lg font-medium">
+                 <p className="text-gray-600 leading-relaxed text-base sm:text-lg font-medium">
                    {lesson.description || 'لا يوجد وصف متاح لهذه المحاضرة حالياً.'}
                  </p>
               </div>
@@ -129,7 +129,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
            <div className="lg:col-span-1 space-y-6">
               
               {/* PDF Resources Card */}
-              <div className="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-card relative overflow-hidden group hover:shadow-lg transition-all duration-300">
+              <div className="bg-white rounded-[2.5rem] p-5 sm:p-6 border border-gray-100 shadow-card relative overflow-hidden group hover:shadow-lg transition-all duration-300">
                  {/* Decorative Background */}
                  <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-red-50 to-transparent rounded-bl-[100px] -mr-10 -mt-10 opacity-50 group-hover:scale-110 transition-transform duration-500" />
                  
@@ -140,7 +140,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
                               <FileText size={28} />
                             </div>
                             <div>
-                               <h3 className="text-xl font-black text-dark">المرفقات</h3>
+                               <h3 className="text-lg sm:text-xl font-black text-dark">المرفقات</h3>
                                <p className="text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full w-fit mt-1">
                                  {lesson.pdfUrls?.length || 0} ملفات PDF
                                </p>
@@ -177,7 +177,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
               </div>
 
               {/* Audio Resources Card */}
-               <div className="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-card relative overflow-hidden group hover:shadow-lg transition-all duration-300">
+               <div className="bg-white rounded-[2.5rem] p-5 sm:p-6 border border-gray-100 shadow-card relative overflow-hidden group hover:shadow-lg transition-all duration-300">
                  {/* Decorative Background */}
                  <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-purple-50 to-transparent rounded-bl-[100px] -mr-10 -mt-10 opacity-50 group-hover:scale-110 transition-transform duration-500" />
                  
@@ -188,7 +188,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
                               <Headphones size={28} />
                             </div>
                             <div>
-                               <h3 className="text-xl font-black text-dark">الصوتيات</h3>
+                               <h3 className="text-lg sm:text-xl font-black text-dark">الصوتيات</h3>
                                <p className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full w-fit mt-1">
                                  {lesson.audioUrls?.length || 0} تسجيلات
                                </p>

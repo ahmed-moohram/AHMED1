@@ -151,9 +151,10 @@ const Navbar: React.FC<NavbarProps> = ({ onHomeClick, isAuthenticated, userName,
              <span className="font-bold text-lg tracking-tight text-dark hidden sm:block font-cairo">
                نبض <span className="text-primary">التمريض</span>
              </span>
-             <div className="w-10 h-10 sm:w-11 sm:h-11 bg-gradient-to-tr from-primary to-secondary rounded-full flex items-center justify-center text-white shadow-glow group-hover:rotate-12 transition-transform duration-500 overflow-hidden">
-               <img src={logoUrl} alt="logo" className="w-full h-full object-contain p-1" />
-               <img src={logoUrl} alt="logo" className="w-full h-full object-cover" />
+             <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-primary to-secondary p-[2px] shadow-glow group-hover:rotate-12 transition-transform duration-500">
+               <div className="w-full h-full rounded-full bg-white overflow-hidden flex items-center justify-center">
+                 <img src={logoUrl} alt="logo" className="w-full h-full object-cover object-left" />
+               </div>
              </div>
           </div>
 

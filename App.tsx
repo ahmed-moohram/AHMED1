@@ -325,7 +325,7 @@ function App() {
       {isAdmin && viewState === 'HOME' && (
           <button 
             onClick={() => setViewState('ADMIN_DASHBOARD')}
-            className="fixed bottom-6 right-6 z-50 bg-dark text-white px-6 py-3 rounded-full font-bold shadow-xl hover:scale-105 transition-transform flex items-center gap-2"
+            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 bg-dark text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-bold shadow-xl hover:scale-105 transition-transform flex items-center gap-2 text-xs sm:text-sm"
           >
               <Shield size={18} />
               لوحة التحكم
@@ -334,10 +334,10 @@ function App() {
       
       {/* Home View */}
       <div className={viewState === 'HOME' ? 'block' : 'hidden'}>
-        <main className="container mx-auto px-4 lg:px-8 relative z-10">
+        <main className="container mx-auto px-3 sm:px-4 lg:px-8 relative z-10">
           
           {/* Luxury Hero Section */}
-          <div className="pt-32 pb-24 text-center max-w-5xl mx-auto">
+          <div className="pt-28 sm:pt-32 pb-16 sm:pb-24 text-center max-w-5xl mx-auto">
              <motion.div
                initial={{ opacity: 0, y: 30 }}
                animate={{ opacity: 1, y: 0 }}
@@ -345,29 +345,29 @@ function App() {
                className="relative"
              >
                {/* Decorative Glow */}
-               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-gradient-to-r from-primary/20 to-secondary/20 blur-[120px] rounded-full pointer-events-none -z-10" />
+               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] sm:w-[500px] h-[220px] sm:h-[300px] bg-gradient-to-r from-primary/20 to-secondary/20 blur-[110px] sm:blur-[120px] rounded-full pointer-events-none -z-10" />
 
                <div className="inline-flex items-center gap-2 py-1.5 px-4 rounded-full bg-white border border-gray-200/60 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] mb-8 backdrop-blur-sm">
                  <span className="flex h-1.5 w-1.5 rounded-full bg-secondary"></span>
-                 <span className="text-xs font-bold tracking-wide text-gray-500 uppercase">مستقبل التعليم الرقمي</span>
+                 <span className="text-[10px] sm:text-xs font-bold tracking-wide text-gray-500 uppercase">مستقبل التعليم الرقمي</span>
                </div>
                
-               <h1 className="text-6xl md:text-8xl font-black mb-8 tracking-tighter leading-[0.95] text-dark">
+               <h1 className="text-4xl sm:text-6xl md:text-8xl font-black mb-6 sm:mb-8 tracking-tighter leading-[0.95] text-dark">
                  أطلق العنان <br />
                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">لقدراتك الكامنة.</span>
                </h1>
                
-               <p className="text-lg md:text-xl text-subtle max-w-2xl mx-auto mb-12 font-medium leading-relaxed">
+               <p className="text-base sm:text-lg md:text-xl text-subtle max-w-2xl mx-auto mb-8 sm:mb-12 font-medium leading-relaxed">
                  منصة تعليمية بتجربة سينمائية فريدة. نجمع بين جمال التصميم وقوة المحتوى لنقدم لك تجربة تعليمية لا تُنسى.
                </p>
 
                <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-                  <button onClick={() => window.scrollTo({top: 800, behavior: 'smooth'})} className="h-14 px-8 rounded-full bg-dark text-white font-bold text-sm hover:shadow-lg hover:shadow-dark/20 hover:scale-105 transition-all duration-300 flex items-center gap-2 group">
+                 <button onClick={() => window.scrollTo({top: 800, behavior: 'smooth'})} className="h-12 sm:h-14 px-6 sm:px-8 rounded-full bg-dark text-white font-bold text-sm hover:shadow-lg hover:shadow-dark/20 hover:scale-105 transition-all duration-300 flex items-center gap-2 group">
                     تصفح الكورسات
                     <ArrowUpLeft size={18} className="group-hover:-translate-x-1 group-hover:-translate-y-1 transition-transform" />
                   </button>
                   {!isAuthenticated && (
-                     <button onClick={() => setViewState('AUTH')} className="h-14 px-8 rounded-full bg-white text-dark border border-gray-200 font-bold text-sm hover:bg-gray-50 transition-all duration-300">
+                     <button onClick={() => setViewState('AUTH')} className="h-12 sm:h-14 px-6 sm:px-8 rounded-full bg-white text-dark border border-gray-200 font-bold text-sm hover:bg-gray-50 transition-all duration-300">
                         تسجيل الدخول
                      </button>
                   )}
@@ -412,21 +412,25 @@ function App() {
           </div>
         </main>
 
-        <footer className="border-t border-gray-200/60 py-16 text-center bg-white/50 backdrop-blur-sm">
-           <h2 className="text-3xl font-black text-dark mb-6 tracking-tighter">أحمد محرم</h2>
+        <footer className="border-t border-gray-200/60 py-12 text-center bg-white/50 backdrop-blur-sm">
+           <h2 className="text-2xl font-black text-dark mb-4 tracking-tighter">أحمد محرم</h2>
            
-           <div className="flex flex-col items-center justify-center gap-4 mb-8">
-              <p className="text-subtle text-sm font-medium">تواصل معنا مباشرة عبر واتساب</p>
+           <div className="flex flex-col items-center justify-center gap-3 mb-7">
+              <p className="text-subtle text-xs font-medium">تواصل معنا مباشرة عبر واتساب</p>
               <a 
                 href="https://wa.me/201005209667" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-3 px-6 py-3 bg-[#25D366] text-white rounded-full hover:bg-[#20bd5a] hover:shadow-lg hover:shadow-green-400/30 transition-all duration-300 font-bold text-base group"
+                aria-label="WhatsApp"
+                title="WhatsApp"
+                className="inline-flex items-center justify-center w-14 h-14 bg-[#25D366] text-white rounded-full hover:bg-[#20bd5a] hover:shadow-lg hover:shadow-green-400/30 transition-all duration-300 font-bold group"
               >
-                01005209667
+                <svg viewBox="0 0 32 32" className="w-7 h-7" fill="currentColor" aria-hidden="true">
+                  <path d="M16.04 3C9.39 3 4 8.39 4 15.04c0 2.35.68 4.64 1.97 6.6L4 29l7.58-1.93a12.02 12.02 0 0 0 4.46.85h.01C22.61 27.92 28 22.53 28 15.88 28 9.23 22.65 3 16.04 3zm6.97 17.45c-.29.82-1.44 1.5-2.37 1.7-.64.14-1.47.25-4.77-1.02-4.22-1.65-6.93-5.7-7.14-5.97-.2-.27-1.71-2.28-1.71-4.35 0-2.07 1.08-3.09 1.46-3.51.38-.42.83-.53 1.1-.53.27 0 .55 0 .79.01.26.01.6-.1.94.72.35.82 1.19 2.84 1.29 3.04.1.2.17.44.03.71-.13.27-.2.44-.4.68-.2.24-.42.53-.6.71-.2.2-.41.41-.18.81.23.4 1.02 1.68 2.19 2.72 1.51 1.35 2.79 1.77 3.19 1.97.4.2.64.17.88-.1.24-.27 1.01-1.18 1.28-1.58.27-.4.54-.33.9-.2.37.13 2.34 1.11 2.74 1.31.4.2.67.3.77.47.1.17.1.99-.19 1.81z"/>
+                </svg>
               </a>
            </div>
-           <p className="text-xs text-gray-400"> جميع الحقوق محفوظة ل احمد محرم© 2026.</p>
+           <p className="text-[11px] text-gray-400"> جميع الحقوق محفوظة ل احمد محرم© 2026.</p>
         </footer>
       </div>
 

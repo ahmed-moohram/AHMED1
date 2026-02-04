@@ -417,31 +417,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 pt-24 px-4 pb-12 font-cairo text-right">
+        <div className="min-h-screen bg-gray-50 pt-24 px-3 sm:px-4 pb-10 font-cairo text-right">
             <div className="max-w-7xl mx-auto">
-                <div className="flex items-center justify-between mb-10">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                     <div>
-                        <h1 className="text-3xl font-black text-dark">لوحة التحكم</h1>
-                        <p className="text-gray-500">إدارة المحتوى والطلاب</p>
+                        <h1 className="text-2xl sm:text-3xl font-black text-dark">لوحة التحكم</h1>
+                        <p className="text-gray-500 text-xs sm:text-sm">إدارة المحتوى والطلاب</p>
                     </div>
-                    <button onClick={onLogout} className="flex items-center gap-2 text-red-500 hover:bg-red-50 px-4 py-2 rounded-xl transition-colors font-bold">
+                    <button onClick={onLogout} className="w-full sm:w-auto flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 px-4 py-2 rounded-xl transition-colors font-bold">
                         <LogOut size={18} />
                         تسجيل خروج
                     </button>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-4 mb-8">
+                <div className="flex gap-3 mb-6">
                     <button 
                         onClick={() => setActiveTab('courses')}
-                        className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'courses' ? 'bg-dark text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
+                        className={`flex-1 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base transition-all ${activeTab === 'courses' ? 'bg-dark text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
                     >
                         <BookOpen size={18} className="inline-block ml-2 mb-1" />
                         المواد الدراسية
                     </button>
                     <button 
                         onClick={() => setActiveTab('students')}
-                        className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'students' ? 'bg-dark text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
+                        className={`flex-1 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base transition-all ${activeTab === 'students' ? 'bg-dark text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
                     >
                         <Users size={18} className="inline-block ml-2 mb-1" />
                         الطلاب المسجلين
@@ -453,14 +453,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                     <div className="space-y-6">
                         <button 
                             onClick={() => { setEditingCourse({}); setIsCourseModalOpen(true); }}
-                            className="w-full py-4 border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center gap-2 text-gray-400 font-bold hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
+                            className="w-full py-3 sm:py-4 border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center gap-2 text-gray-400 font-bold text-sm sm:text-base hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
                         >
                             <Plus size={20} /> إضافة كورس جديد
                         </button>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {courses.map(course => (
-                                <div key={course.id} className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+                                <div key={course.id} className="bg-white rounded-3xl p-4 sm:p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all group">
                                     <div className="relative aspect-video rounded-2xl overflow-hidden mb-4 bg-gray-100">
                                         {course.thumbnail && <img src={course.thumbnail} className="w-full h-full object-cover" />}
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -497,7 +497,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                     </div>
                 ) : (
                     <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                        <div className="p-5 border-b border-gray-100 bg-white">
+                        <div className="p-4 sm:p-5 border-b border-gray-100 bg-white">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <div className="text-sm font-black text-dark">الطلاب</div>
@@ -530,33 +530,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                             </div>
                         </div>
 
-                        <table className="w-full">
+                        <div className="w-full overflow-x-auto">
+                        <table className="w-full min-w-[820px]">
                             <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>
-                                    <th className="p-4 text-right font-bold text-gray-500 text-sm">اسم الطالب</th>
-                                    <th className="p-4 text-right font-bold text-gray-500 text-sm">الرقم التعريفي (ID)</th>
+                                    <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">اسم الطالب</th>
+                                    <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">الرقم التعريفي (ID)</th>
                                     {showAllUsers && (
-                                        <th className="p-4 text-right font-bold text-gray-500 text-sm">النوع</th>
+                                        <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">النوع</th>
                                     )}
                                     {showAllUsers && (
-                                        <th className="p-4 text-right font-bold text-gray-500 text-sm">كلمة السر</th>
+                                        <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">كلمة السر</th>
                                     )}
-                                    <th className="p-4 text-right font-bold text-gray-500 text-sm">الحالة</th>
-                                    <th className="p-4 text-right font-bold text-gray-500 text-sm">إجراءات</th>
+                                    <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">الحالة</th>
+                                    <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">إجراءات</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {students.map((student) => (
                                     <tr key={student.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
-                                        <td className="p-4 font-bold text-dark">{student.full_name}</td>
-                                        <td className="p-4 font-mono text-primary bg-primary/5 w-fit rounded-lg">{student.student_id}</td>
+                                        <td className="p-3 sm:p-4 font-bold text-dark text-sm whitespace-nowrap">{student.full_name}</td>
+                                        <td className="p-3 sm:p-4"><span className="inline-flex font-mono text-primary bg-primary/5 px-3 py-1.5 rounded-lg whitespace-nowrap">{student.student_id}</span></td>
                                         {showAllUsers && (
-                                            <td className="p-4">
+                                            <td className="p-3 sm:p-4">
                                                 <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold">{(student as any).role}</span>
                                             </td>
                                         )}
                                         {showAllUsers && (
-                                            <td className="p-4">
+                                            <td className="p-3 sm:p-4">
                                                 {(student as any).role === 'student' && student.student_id ? (
                                                     <div className="flex items-center gap-2 justify-end">
                                                         <span className="font-mono text-xs text-gray-600" dir="ltr">Ahmed@{student.student_id}</span>
@@ -586,14 +587,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                                 )}
                                             </td>
                                         )}
-                                        <td className="p-4">
+                                        <td className="p-3 sm:p-4">
                                             {(student as any).is_banned ? (
                                                 <span className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs font-bold">محظور</span>
                                             ) : (
                                                 <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs font-bold">نشط</span>
                                             )}
                                         </td>
-                                        <td className="p-4">
+                                        <td className="p-3 sm:p-4">
                                             <div className="flex gap-2 flex-wrap">
                                                 {showAllUsers && (student as any).role === 'student' && Boolean(student.student_id) && (
                                                     <button
@@ -640,6 +641,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                 ))}
                             </tbody>
                         </table>
+                        </div>
 
                         <div className="p-4 border-t border-gray-100 bg-white">
                             {studentsHasMore ? (
@@ -661,14 +663,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
 
                 {/* --- Course Modal --- */}
                 {isCourseModalOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                        <div className="bg-white rounded-[2rem] p-8 w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]">
-                            <h2 className="text-2xl font-bold mb-6">{editingCourse?.id ? 'تعديل الكورس' : 'كورس جديد'}</h2>
+                    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4">
+                        <div className="bg-white rounded-t-[2rem] sm:rounded-[2rem] p-5 sm:p-8 w-full sm:max-w-lg shadow-2xl overflow-y-auto max-h-[90vh] mt-auto sm:mt-0">
+                            <h2 className="text-xl sm:text-2xl font-bold mb-5 sm:mb-6">{editingCourse?.id ? 'تعديل الكورس' : 'كورس جديد'}</h2>
                             <div className="space-y-4">
                                 <input placeholder="عنوان الكورس" value={editingCourse?.title || ''} onChange={e => setEditingCourse({...editingCourse, title: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" />
                                 <textarea placeholder="الوصف" value={editingCourse?.description || ''} onChange={e => setEditingCourse({...editingCourse, description: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" rows={3} />
                                 <input placeholder="رابط الصورة المصغرة (Thumbnail)" value={editingCourse?.thumbnail || ''} onChange={e => setEditingCourse({...editingCourse, thumbnail: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-left" dir="ltr" />
-                                <div className="flex items-center justify-between gap-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                     <label className="flex-1">
                                         <div className="text-xs font-bold text-gray-500 mb-2">أو ارفع صورة من الملفات</div>
                                         <input
@@ -692,7 +694,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                 {uploadingCourseThumbnail && (
                                     <div className="text-xs font-bold text-gray-500">جاري رفع الصورة...</div>
                                 )}
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <input placeholder="اسم المدرب" value={editingCourse?.instructor || ''} onChange={e => setEditingCourse({...editingCourse, instructor: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" />
                                     <select value={editingCourse?.level || 'Beginner'} onChange={e => setEditingCourse({...editingCourse, level: e.target.value as any})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200">
                                         <option value="Beginner">مبتدأ</option>
@@ -702,9 +704,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                 </div>
                                 <input placeholder="التاجات (مفصولة بفاصلة)" value={editingCourse?.tags?.toString() || ''} onChange={e => setEditingCourse({...editingCourse, tags: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" />
                             </div>
-                            <div className="flex gap-4 mt-8">
+                            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 sm:mt-8">
                                 <button onClick={handleSaveCourse} className="flex-1 bg-dark text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-black"><Save size={18} /> حفظ</button>
-                                <button onClick={() => setIsCourseModalOpen(false)} className="px-6 border border-gray-200 rounded-xl font-bold hover:bg-gray-50">إلغاء</button>
+                                <button onClick={() => setIsCourseModalOpen(false)} className="w-full sm:w-auto px-6 py-3 border border-gray-200 rounded-xl font-bold hover:bg-gray-50">إلغاء</button>
                             </div>
                         </div>
                     </div>
@@ -712,9 +714,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
 
                  {/* --- Lesson Modal --- */}
                  {isLessonModalOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                        <div className="bg-white rounded-[2rem] p-8 w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]">
-                            <h2 className="text-2xl font-bold mb-6">{editingLesson?.id ? 'تعديل المحاضرة' : 'محاضرة جديدة'}</h2>
+                    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4">
+                        <div className="bg-white rounded-t-[2rem] sm:rounded-[2rem] p-5 sm:p-8 w-full sm:max-w-lg shadow-2xl overflow-y-auto max-h-[90vh] mt-auto sm:mt-0">
+                            <h2 className="text-xl sm:text-2xl font-bold mb-5 sm:mb-6">{editingLesson?.id ? 'تعديل المحاضرة' : 'محاضرة جديدة'}</h2>
                             <div className="space-y-4">
                                 <input placeholder="عنوان المحاضرة" value={editingLesson?.title || ''} onChange={e => setEditingLesson({...editingLesson, title: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" />
                                 <input placeholder="المدة (مثال: 10:00)" value={editingLesson?.duration || ''} onChange={e => setEditingLesson({...editingLesson, duration: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" />
@@ -793,9 +795,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex gap-4 mt-8">
+                            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 sm:mt-8">
                                 <button onClick={handleSaveLesson} className="flex-1 bg-dark text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-black"><Save size={18} /> حفظ</button>
-                                <button onClick={() => setIsLessonModalOpen(false)} className="px-6 border border-gray-200 rounded-xl font-bold hover:bg-gray-50">إلغاء</button>
+                                <button onClick={() => setIsLessonModalOpen(false)} className="w-full sm:w-auto px-6 py-3 border border-gray-200 rounded-xl font-bold hover:bg-gray-50">إلغاء</button>
                             </div>
                         </div>
                     </div>

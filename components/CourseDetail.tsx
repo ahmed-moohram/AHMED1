@@ -11,10 +11,10 @@ interface CourseDetailProps {
 
 const CourseDetail: React.FC<CourseDetailProps> = ({ course, onBack, onLessonSelect }) => {
   return (
-    <div className="min-h-screen bg-background pt-24 pb-12 px-4 md:px-8">
+    <div className="min-h-screen bg-background pt-24 pb-12 px-3 sm:px-4 md:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-start gap-4 mb-12">
+        <div className="flex flex-col sm:flex-row items-start gap-4 mb-8 sm:mb-12">
           <button 
             onClick={onBack}
             className="mt-1 w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-dark hover:text-white transition-all shadow-sm"
@@ -23,14 +23,14 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ course, onBack, onLessonSel
           </button>
           
           <div>
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex flex-wrap items-center gap-3 mb-2">
               <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
                 {course.level}
               </span>
               <span className="text-gray-400 text-sm">{course.lessons.length} محاضرات</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-black text-dark mb-4">{course.title}</h1>
-            <p className="text-lg text-subtle max-w-2xl">{course.description}</p>
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-dark mb-3 sm:mb-4">{course.title}</h1>
+            <p className="text-sm sm:text-lg text-subtle max-w-2xl leading-relaxed">{course.description}</p>
           </div>
         </div>
 
@@ -46,7 +46,7 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ course, onBack, onLessonSel
               `}
             >
               {/* Thumbnail Area */}
-              <div className="relative h-48 bg-gray-100 overflow-hidden">
+              <div className="relative h-44 sm:h-48 bg-gray-100 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
                 <img 
                   src={course.thumbnail} 
@@ -75,7 +75,7 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ course, onBack, onLessonSel
               </div>
 
               {/* Content Area */}
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <div className="flex items-center gap-2 mb-3">
                    <span className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
                      {index + 1}
@@ -83,7 +83,7 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ course, onBack, onLessonSel
                    <span className="text-xs font-bold text-primary">محاضرة فيديو</span>
                 </div>
                 
-                <h3 className="text-xl font-bold text-dark mb-2 leading-tight group-hover:text-primary transition-colors">
+                <h3 className="text-lg sm:text-xl font-bold text-dark mb-2 leading-tight group-hover:text-primary transition-colors">
                   {lesson.title}
                 </h3>
                 
