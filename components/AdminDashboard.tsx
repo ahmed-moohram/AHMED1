@@ -559,29 +559,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                         {showAllUsers && (
                                             <td className="p-3 sm:p-4">
                                                 {(student as any).role === 'student' && student.student_id ? (
-                                                    <div className="flex items-center gap-2 justify-end">
-                                                        <span className="font-mono text-xs text-gray-600" dir="ltr">Ahmed@{student.student_id}</span>
-                                                        <button
-                                                            onClick={async (e) => {
-                                                                e.stopPropagation();
-                                                                const value = `Ahmed@${student.student_id}`;
-                                                                try {
-                                                                    await navigator.clipboard.writeText(value);
-                                                                    setCopiedUserId(student.id);
-                                                                    window.setTimeout(() => setCopiedUserId((prev) => (prev === student.id ? null : prev)), 1200);
-                                                                } catch {
-                                                                    alert(value);
-                                                                }
-                                                            }}
-                                                            className="w-7 h-7 rounded-lg border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50"
-                                                            title="نسخ"
-                                                        >
-                                                            <Copy size={14} className="text-gray-500" />
-                                                        </button>
-                                                        {copiedUserId === student.id && (
-                                                            <span className="text-[10px] font-bold text-green-600">تم النسخ</span>
-                                                        )}
-                                                    </div>
+                                                    <span className="text-xs font-bold text-gray-400">—</span>
                                                 ) : (
                                                     <span className="text-xs text-gray-400">—</span>
                                                 )}
@@ -601,10 +579,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                                         disabled={student.id === currentUserId}
                                                         onClick={() => handleResetStudentPassword(student.id)}
                                                         className={`px-3 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1 ${student.id === currentUserId ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                        title="تعيين كلمة السر إلى Ahmed@{ID}"
+                                                        title="إعادة تعيين كلمة السر"
                                                     >
                                                         <KeyRound size={14} />
-                                                        تعيين كلمة السر
+                                                        إعادة تعيين كلمة السر
                                                     </button>
                                                 )}
                                                 <button

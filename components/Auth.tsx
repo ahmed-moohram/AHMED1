@@ -1,8 +1,9 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ArrowLeft, Loader2, User, Fingerprint, X, Eye, EyeOff } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import eyeImage from './2.png';
 
 interface AuthProps {
   onLoginSuccess: (isAdmin: boolean) => void;
@@ -11,77 +12,9 @@ interface AuthProps {
 
 // --- Hyper-Realistic Eye Component (Mascot) ---
 const RealisticEye = ({ isOpen, inputValue, isFocused }: { isOpen: boolean; inputValue: string; isFocused: boolean }) => {
-  // Calculate pupil position
-  const { pupilX, pupilY } = useMemo(() => {
-    // 1. Horizontal Tracking (RTL Awareness)
-    const maxChars = 25; 
-    const length = Math.min(inputValue.length, maxChars);
-    const progress = length / maxChars;
-    
-    // Range of eye movement (pixels)
-    const xRange = 22; 
-    
-    // Start at right (+xRange), end at left (-xRange)
-    let x = 0;
-    if (isFocused || inputValue.length > 0) {
-        x = xRange - (progress * (xRange * 2));
-    }
-
-    // 2. Vertical Tracking (Looking Down)
-    let y = 0;
-    if (isFocused) {
-        y = 30; // Look down at the input field
-    } else if (inputValue.length > 0) {
-        y = 10; // Slightly down if there is text but not focused
-    }
-
-    return { pupilX: x, pupilY: y };
-  }, [inputValue, isFocused]);
-
   return (
     <div className="w-full h-full flex items-center justify-center drop-shadow-2xl">
-      <svg width="100%" height="100%" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="overflow-visible">
-        <defs>
-          <clipPath id="eyeMask">
-             <path d="M10,60 Q60,10 110,60 Q60,110 10,60 Z" />
-          </clipPath>
-          <radialGradient id="scleraGrad" cx="50%" cy="50%" r="50%">
-            <stop offset="80%" stopColor="#FFFFFF" />
-            <stop offset="100%" stopColor="#E2E8F0" />
-          </radialGradient>
-          <radialGradient id="irisGrad" cx="50%" cy="50%" r="50%">
-            <stop offset="20%" stopColor="#000000" />
-            <stop offset="40%" stopColor="#1d4ed8" />
-            <stop offset="70%" stopColor="#3b82f6" />
-            <stop offset="90%" stopColor="#1e3a8a" />
-            <stop offset="100%" stopColor="#0f172a" />
-          </radialGradient>
-        </defs>
-
-        {/* Sclera */}
-        <path 
-          d="M10,60 Q60,10 110,60 Q60,110 10,60 Z" 
-          fill="url(#scleraGrad)" 
-          stroke="#CBD5E1"
-          strokeWidth="1"
-        />
-
-        {/* Iris Group */}
-        <g clipPath="url(#eyeMask)">
-          <motion.g
-            animate={{ x: pupilX, y: pupilY }}
-            transition={{ type: "spring", stiffness: 150, damping: 20, mass: 0.8 }}
-          >
-            <circle cx="60" cy="60" r="26" fill="url(#irisGrad)" />
-            <circle cx="60" cy="60" r="10" fill="#000000" />
-            <ellipse cx="70" cy="50" rx="8" ry="5" fill="white" opacity="0.9" transform="rotate(-45 70 50)" />
-            <circle cx="54" cy="68" r="3" fill="white" opacity="0.5" />
-          </motion.g>
-        </g>
-
-        {/* Eyelid */}
-        <path d="M10,60 Q60,10 110,60" fill="none" stroke="black" strokeOpacity="0.05" strokeWidth="4" />
-      </svg>
+      <img src={eyeImage} alt="eye" className="w-full h-full object-contain" draggable={false} />
     </div>
   );
 };
@@ -124,14 +57,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
     return clean;
   };
 
-  const generatedPassword = useMemo(() => {
-    if (isLogin) return '';
-    const cleanId = sanitizeInput(studentId);
-    if (!cleanId || cleanId.includes('@')) return '';
-    return `Ahmed@${cleanId}`;
-  }, [isLogin, studentId]);
-
-  const displayPassword = isLogin ? password : generatedPassword;
+  const displayPassword = password;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,13 +67,13 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
     try {
       // 1. Clean the input
       const cleanId = sanitizeInput(studentId);
-      const cleanPassword = isLogin ? password.trim() : (cleanId && !cleanId.includes('@') ? `Ahmed@${cleanId}` : '');
+      const cleanPassword = password.trim();
       
       if (!cleanId || (!isLogin && cleanId.includes('@'))) {
         throw new Error('الرجاء إدخال الرقم التعريفي');
       }
 
-      if (isLogin && !cleanPassword) {
+      if (!cleanPassword) {
         throw new Error('الرجاء إدخال كلمة المرور');
       }
 
@@ -381,10 +307,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
               type={showPassword ? "text" : "password"}
               placeholder="كلمة المرور"
               value={displayPassword}
-              readOnly={!isLogin}
-              onChange={(e) => {
-                if (isLogin) setPassword(e.target.value);
-              }}
+              onChange={(e) => setPassword(e.target.value)}
               onFocus={() => setIsPasswordFocused(true)}
               onBlur={() => setIsPasswordFocused(false)}
               className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 pr-6 pl-12 text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-bold"
@@ -417,6 +340,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
             onClick={() => {
                 setIsLogin(!isLogin);
                 setError('');
+                setPassword('');
             }}
             className="text-sm text-gray-500 font-medium hover:text-primary transition-colors underline decoration-dotted underline-offset-4"
           >
