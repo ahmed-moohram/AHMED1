@@ -21,6 +21,24 @@ type Message = {
   created_at: string;
 };
 
+type UiMessage = Message & { optimistic?: boolean };
+
+const createUuid = () => {
+  const c: any = globalThis.crypto;
+  if (c?.randomUUID) return c.randomUUID();
+  const bytes = new Uint8Array(16);
+  c?.getRandomValues?.(bytes);
+  if (bytes.every((b: number) => b === 0)) {
+    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+};
+
 const formatTime = (iso?: string | null) => {
   if (!iso) return '';
   try {
@@ -36,10 +54,13 @@ const SupportChatWidget: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [conversation, setConversation] = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<UiMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const msgChannelRef = useRef<any>(null);
+  const pendingBroadcastRef = useRef<UiMessage[]>([]);
+  const [channelReady, setChannelReady] = useState(false);
 
   const unread = useMemo(() => {
     const n = Number(conversation?.unread_user ?? 0);
@@ -47,8 +68,8 @@ const SupportChatWidget: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }
   }, [conversation?.unread_user]);
 
   const ensureConversation = async () => {
-    const { data: auth } = await supabase.auth.getUser();
-    const uid = auth?.user?.id;
+    const { data: { session } } = await supabase.auth.getSession();
+    const uid = session?.user?.id;
     if (!uid) throw new Error('غير مسجل دخول');
 
     const { data: existing, error: e1 } = await supabase
@@ -59,13 +80,17 @@ const SupportChatWidget: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }
 
     if (!e1 && existing?.id) return existing as Conversation;
 
-    const { data: created, error: e2 } = await supabase
+    const { error: e2 } = await supabase
       .from('support_conversations')
-      .insert([{ user_id: uid }])
-      .select('id, user_id, updated_at, last_message_at, last_message_body, unread_user')
-      .single();
-
+      .upsert([{ user_id: uid }], { onConflict: 'user_id' });
     if (e2) throw e2;
+
+    const { data: created, error: e3 } = await supabase
+      .from('support_conversations')
+      .select('id, user_id, updated_at, last_message_at, last_message_body, unread_user')
+      .eq('user_id', uid)
+      .single();
+    if (e3) throw e3;
     return created as Conversation;
   };
 
@@ -77,7 +102,15 @@ const SupportChatWidget: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }
       .order('created_at', { ascending: true })
       .limit(200);
     if (error) throw error;
-    setMessages((data || []) as Message[]);
+    const incoming = ((data || []) as UiMessage[]).map((m) => ({ ...m, optimistic: false }));
+    setMessages((prev) => {
+      const map = new Map<string, UiMessage>();
+      prev.forEach((m) => map.set(m.id, m));
+      incoming.forEach((m) => map.set(m.id, m));
+      return Array.from(map.values()).sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    });
   };
 
   const markRead = async (conversationId: string) => {
@@ -97,8 +130,8 @@ const SupportChatWidget: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }
     let mounted = true;
     (async () => {
       try {
-        const { data: auth } = await supabase.auth.getUser();
-        const uid = auth?.user?.id;
+        const { data: { session } } = await supabase.auth.getSession();
+        const uid = session?.user?.id;
         if (!uid) return;
 
         const { data: existing, error } = await supabase
@@ -157,12 +190,17 @@ const SupportChatWidget: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }
         if (!mounted) return;
         if (!conversation?.id) setConversation(conv);
 
-        await loadMessages(conv.id);
-        if (!mounted) return;
-        await markRead(conv.id);
-
+        setChannelReady(false);
         msgChannel = supabase
           .channel(`support_messages_${conv.id}`)
+          .on('broadcast', { event: 'message' }, (payload) => {
+            const next = (payload as any)?.payload as UiMessage;
+            if (!next?.id) return;
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === next.id)) return prev;
+              return [...prev, { ...(next as any), optimistic: false }];
+            });
+          })
           .on(
             'postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `conversation_id=eq.${conv.id}` },
@@ -174,7 +212,29 @@ const SupportChatWidget: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }
               });
             }
           )
-          .subscribe();
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              setChannelReady(true);
+              const pending = pendingBroadcastRef.current;
+              pendingBroadcastRef.current = [];
+              pending.forEach((m) => {
+                try {
+                  void msgChannelRef.current?.send({
+                    type: 'broadcast',
+                    event: 'message',
+                    payload: { ...m, optimistic: false },
+                  });
+                } catch {
+                }
+              });
+            }
+          });
+
+        msgChannelRef.current = msgChannel;
+
+        await loadMessages(conv.id);
+        if (!mounted) return;
+        markRead(conv.id);
       } catch (e: any) {
         if (!mounted) return;
         setError(e?.message || 'فشل تحميل الرسائل');
@@ -186,6 +246,9 @@ const SupportChatWidget: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }
     return () => {
       mounted = false;
       if (msgChannel) supabase.removeChannel(msgChannel);
+      if (msgChannelRef.current === msgChannel) msgChannelRef.current = null;
+      pendingBroadcastRef.current = [];
+      setChannelReady(false);
     };
   }, [isOpen]);
 
@@ -202,16 +265,47 @@ const SupportChatWidget: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }
 
     setSending(true);
     setError(null);
+    const messageId = createUuid();
+    const nowIso = new Date().toISOString();
+    const optimistic: UiMessage = {
+      id: messageId,
+      conversation_id: conversation?.id || 'pending',
+      sender_id: 'pending',
+      sender_role: 'student',
+      body,
+      created_at: nowIso,
+      optimistic: true,
+    };
+
+    setDraft('');
+    setMessages((prev) => {
+      if (prev.some((m) => m.id === optimistic.id)) return prev;
+      return [...prev, optimistic];
+    });
+
     try {
       const ensured = conv || (await ensureConversation());
       if (!conversation?.id) setConversation(ensured);
 
-      const { data: auth } = await supabase.auth.getUser();
-      const uid = auth?.user?.id;
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
       if (!uid) throw new Error('غير مسجل دخول');
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? {
+                ...m,
+                conversation_id: ensured.id,
+                sender_id: uid,
+              }
+            : m
+        )
+      );
 
       const { error } = await supabase.from('support_messages').insert([
         {
+          id: messageId,
           conversation_id: ensured.id,
           sender_id: uid,
           sender_role: 'student',
@@ -219,9 +313,24 @@ const SupportChatWidget: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }
         },
       ]);
       if (error) throw error;
-      setDraft('');
-      await markRead(ensured.id);
+
+      const broadcastMsg: UiMessage = { ...optimistic, conversation_id: ensured.id, sender_id: uid, optimistic: false };
+      if (channelReady) {
+        try {
+          void msgChannelRef.current?.send({
+            type: 'broadcast',
+            event: 'message',
+            payload: broadcastMsg,
+          });
+        } catch {
+        }
+      } else {
+        pendingBroadcastRef.current.push(broadcastMsg);
+      }
+
+      markRead(ensured.id);
     } catch (e: any) {
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
       setError(e?.message || 'فشل إرسال الرسالة');
     } finally {
       setSending(false);

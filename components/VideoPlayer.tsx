@@ -12,6 +12,7 @@ interface VideoPlayerProps {
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [resourceViewer, setResourceViewer] = useState<null | { kind: 'pdf' | 'audio'; title: string; url: string }>(null);
 
   const isYouTubeUrl = (url: string) => {
     try {
@@ -23,6 +24,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
     } catch {
       return false;
     }
+  };
+
+  const getDriveFileId = (url: string) => {
+    try {
+      const u = new URL(url);
+      if (!u.hostname.includes('drive.google.com')) return null;
+      const m = u.pathname.match(/\/file\/d\/([^/]+)/);
+      if (m?.[1]) return m[1];
+      const id = u.searchParams.get('id');
+      if (id) return id;
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const toDrivePreviewUrl = (url: string) => {
+    const id = getDriveFileId(url);
+    if (!id) return url;
+    return `https://drive.google.com/file/d/${id}/preview`;
   };
 
   const getYouTubeEmbedUrl = (url: string) => {
@@ -151,11 +172,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
                     <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                       {lesson.pdfUrls && lesson.pdfUrls.length > 0 ? (
                         lesson.pdfUrls.map((pdf, idx) => (
-                          <a 
+                          <button
                             key={idx}
-                            href={pdf.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            type="button"
+                            onClick={() => setResourceViewer({ kind: 'pdf', title: pdf.title, url: pdf.url })}
                             className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-transparent hover:bg-white hover:border-red-100 hover:shadow-md transition-all group/item"
                           >
                             <div className="flex items-center gap-3 overflow-hidden">
@@ -165,7 +185,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
                               <span className="font-bold text-gray-700 group-hover/item:text-dark truncate text-sm">{pdf.title}</span>
                             </div>
                             <ExternalLink size={16} className="text-gray-300 group-hover/item:text-red-500 transition-colors" />
-                          </a>
+                          </button>
                         ))
                       ) : (
                         <div className="text-center py-8 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
@@ -199,11 +219,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
                     <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                       {lesson.audioUrls && lesson.audioUrls.length > 0 ? (
                         lesson.audioUrls.map((audio, idx) => (
-                          <a 
+                          <button
                             key={idx}
-                            href={audio.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            type="button"
+                            onClick={() => setResourceViewer({ kind: 'audio', title: audio.title, url: audio.url })}
                             className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-transparent hover:bg-white hover:border-purple-100 hover:shadow-md transition-all group/item"
                           >
                             <div className="flex items-center gap-3 overflow-hidden">
@@ -213,7 +232,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
                               <span className="font-bold text-gray-700 group-hover/item:text-dark truncate text-sm">{audio.title}</span>
                             </div>
                             <span className="text-[10px] font-bold text-white bg-purple-400 px-2 py-1 rounded-full group-hover/item:bg-purple-600 transition-colors">استماع</span>
-                          </a>
+                          </button>
                         ))
                       ) : (
                         <div className="text-center py-8 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
@@ -228,6 +247,59 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
 
         </div>
       </div>
+
+      {resourceViewer && (
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
+          <div className="w-full max-w-4xl bg-white rounded-[2rem] overflow-hidden border border-gray-100 shadow-2xl">
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100">
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-gray-400">
+                  {resourceViewer.kind === 'pdf' ? 'PDF' : 'صوت'}
+                </div>
+                <div className="font-black text-dark truncate">{resourceViewer.title}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={resourceViewer.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-10 px-4 rounded-full bg-gray-50 border border-gray-200 text-gray-700 font-bold text-xs flex items-center gap-2 hover:bg-white"
+                >
+                  <ExternalLink size={14} />
+                  فتح خارجي
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setResourceViewer(null)}
+                  className="h-10 px-4 rounded-full bg-dark text-white font-bold text-xs hover:bg-black"
+                >
+                  إغلاق
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-gray-50">
+              {resourceViewer.kind === 'pdf' ? (
+                <iframe
+                  src={toDrivePreviewUrl(resourceViewer.url)}
+                  className="w-full h-[70vh]"
+                  title={resourceViewer.title}
+                />
+              ) : getDriveFileId(resourceViewer.url) ? (
+                <iframe
+                  src={toDrivePreviewUrl(resourceViewer.url)}
+                  className="w-full h-[70vh]"
+                  title={resourceViewer.title}
+                />
+              ) : (
+                <div className="p-6">
+                  <audio src={resourceViewer.url} controls className="w-full" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

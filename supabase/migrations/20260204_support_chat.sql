@@ -167,3 +167,119 @@ with check (
     (sender_role = 'admin' and public.support_is_admin_or_master())
   )
 );
+
+create table if not exists public.support_banned_words (
+  id bigserial primary key,
+  pattern text not null,
+  is_regex boolean not null default false,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists support_banned_words_active_idx on public.support_banned_words(is_active);
+
+create or replace function public.support_normalize_arabic(p_text text)
+returns text
+language plpgsql
+immutable
+as $$
+declare
+  t text;
+begin
+  t := coalesce(p_text, '');
+  t := lower(t);
+  t := regexp_replace(t, '[ً-ْـٰ]', '', 'g');
+  t := translate(t, 'أإآٱ', 'اااا');
+  t := translate(t, 'ى', 'ي');
+  t := translate(t, 'ة', 'ه');
+  t := regexp_replace(t, '[[:punct:]]+', ' ', 'g');
+  t := regexp_replace(t, '(.)\1{2,}', '\1\1', 'g');
+  t := regexp_replace(t, '\s+', ' ', 'g');
+  return btrim(t);
+end;
+$$;
+
+create or replace function public.support_normalize_arabic_compact(p_text text)
+returns text
+language sql
+immutable
+as $$
+  select replace(public.support_normalize_arabic(p_text), ' ', '');
+$$;
+
+create or replace function public.support_message_contains_banned_word(p_body text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with x as (
+    select
+      public.support_normalize_arabic(p_body) as body,
+      public.support_normalize_arabic_compact(p_body) as body_compact
+  )
+  select exists (
+    select 1
+    from public.support_banned_words w, x
+    where w.is_active
+      and (
+        (w.is_regex and x.body ~* w.pattern)
+        or
+        (
+          not w.is_regex
+          and (
+            position(public.support_normalize_arabic(w.pattern) in x.body) > 0
+            or position(public.support_normalize_arabic_compact(w.pattern) in x.body_compact) > 0
+          )
+        )
+      )
+  );
+$$;
+
+create or replace function public.support_block_banned_words()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if public.support_message_contains_banned_word(new.body) then
+    raise exception using message = 'رسالتك تحتوي على ألفاظ غير لائقة';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists support_messages_block_banned_words on public.support_messages;
+create trigger support_messages_block_banned_words
+before insert or update on public.support_messages
+for each row
+execute function public.support_block_banned_words();
+
+alter table public.support_banned_words enable row level security;
+
+drop policy if exists support_banned_words_select_admin on public.support_banned_words;
+create policy support_banned_words_select_admin
+on public.support_banned_words
+for select
+using (public.support_is_admin_or_master());
+
+drop policy if exists support_banned_words_insert_admin on public.support_banned_words;
+create policy support_banned_words_insert_admin
+on public.support_banned_words
+for insert
+with check (public.support_is_admin_or_master());
+
+drop policy if exists support_banned_words_update_admin on public.support_banned_words;
+create policy support_banned_words_update_admin
+on public.support_banned_words
+for update
+using (public.support_is_admin_or_master())
+with check (public.support_is_admin_or_master());
+
+drop policy if exists support_banned_words_delete_admin on public.support_banned_words;
+create policy support_banned_words_delete_admin
+on public.support_banned_words
+for delete
+using (public.support_is_admin_or_master());

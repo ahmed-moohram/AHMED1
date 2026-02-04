@@ -28,6 +28,24 @@ type MessageRow = {
   created_at: string;
 };
 
+type UiMessage = MessageRow & { optimistic?: boolean };
+
+const createUuid = () => {
+  const c: any = globalThis.crypto;
+  if (c?.randomUUID) return c.randomUUID();
+  const bytes = new Uint8Array(16);
+  c?.getRandomValues?.(bytes);
+  if (bytes.every((b: number) => b === 0)) {
+    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+};
+
 const formatTime = (iso?: string | null) => {
   if (!iso) return '';
   try {
@@ -64,11 +82,14 @@ const AdminMessages: React.FC<{ currentUserId: string | null }> = ({ currentUser
     [conversations, selectedConversationId]
   );
 
-  const [messages, setMessages] = useState<MessageRow[]>([]);
+  const [messages, setMessages] = useState<UiMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [draft, setDraft] = useState('');
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const msgChannelRef = useRef<any>(null);
+  const pendingBroadcastRef = useRef<UiMessage[]>([]);
+  const [channelReady, setChannelReady] = useState(false);
 
   const fetchConversations = async () => {
     if (!isSupabaseConfigured) return;
@@ -123,7 +144,15 @@ const AdminMessages: React.FC<{ currentUserId: string | null }> = ({ currentUser
         .order('created_at', { ascending: true })
         .limit(300);
       if (error) throw error;
-      setMessages((data || []) as MessageRow[]);
+      const incoming = ((data || []) as UiMessage[]).map((m) => ({ ...m, optimistic: false }));
+      setMessages((prev) => {
+        const map = new Map<string, UiMessage>();
+        prev.forEach((m) => map.set(m.id, m));
+        incoming.forEach((m) => map.set(m.id, m));
+        return Array.from(map.values()).sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+      });
     } catch (e: any) {
       setError(e?.message || 'فشل تحميل الرسائل');
     } finally {
@@ -161,15 +190,23 @@ const AdminMessages: React.FC<{ currentUserId: string | null }> = ({ currentUser
 
   useEffect(() => {
     if (!selectedConversationId) return;
-    fetchMessages(selectedConversationId);
-    markAdminRead(selectedConversationId);
-
     if (!isSupabaseConfigured) return;
+    const convId = selectedConversationId;
+
+    setChannelReady(false);
     const ch = supabase
-      .channel(`support_messages_admin_${selectedConversationId}`)
+      .channel(`support_messages_${convId}`)
+      .on('broadcast', { event: 'message' }, (payload) => {
+        const next = (payload as any)?.payload as UiMessage;
+        if (!next?.id) return;
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === next.id)) return prev;
+          return [...prev, { ...(next as any), optimistic: false }];
+        });
+      })
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `conversation_id=eq.${selectedConversationId}` },
+        { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `conversation_id=eq.${convId}` },
         (payload) => {
           const m = payload.new as MessageRow;
           setMessages((prev) => {
@@ -178,14 +215,38 @@ const AdminMessages: React.FC<{ currentUserId: string | null }> = ({ currentUser
           });
 
           if (m.sender_role === 'student') {
-            markAdminRead(selectedConversationId);
+            markAdminRead(convId);
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setChannelReady(true);
+          const pending = pendingBroadcastRef.current;
+          pendingBroadcastRef.current = [];
+          pending.forEach((m) => {
+            try {
+              void msgChannelRef.current?.send({
+                type: 'broadcast',
+                event: 'message',
+                payload: { ...m, optimistic: false },
+              });
+            } catch {
+            }
+          });
+        }
+      });
+
+    msgChannelRef.current = ch;
+
+    fetchMessages(convId);
+    markAdminRead(convId);
 
     return () => {
       supabase.removeChannel(ch);
+      if (msgChannelRef.current === ch) msgChannelRef.current = null;
+      pendingBroadcastRef.current = [];
+      setChannelReady(false);
     };
   }, [selectedConversationId]);
 
@@ -214,9 +275,29 @@ const AdminMessages: React.FC<{ currentUserId: string | null }> = ({ currentUser
 
     setSending(true);
     setError(null);
+    let messageId: string | null = null;
     try {
+      messageId = createUuid();
+      const nowIso = new Date().toISOString();
+      const optimistic: UiMessage = {
+        id: messageId,
+        conversation_id: selectedConversationId,
+        sender_id: currentUserId,
+        sender_role: 'admin',
+        body,
+        created_at: nowIso,
+        optimistic: true,
+      };
+
+      setDraft('');
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === optimistic.id)) return prev;
+        return [...prev, optimistic];
+      });
+
       const { error } = await supabase.from('support_messages').insert([
         {
+          id: messageId,
           conversation_id: selectedConversationId,
           sender_id: currentUserId,
           sender_role: 'admin',
@@ -224,9 +305,26 @@ const AdminMessages: React.FC<{ currentUserId: string | null }> = ({ currentUser
         },
       ]);
       if (error) throw error;
-      setDraft('');
-      await markAdminRead(selectedConversationId);
+
+      const broadcastMsg: UiMessage = { ...optimistic, optimistic: false };
+      if (channelReady) {
+        try {
+          void msgChannelRef.current?.send({
+            type: 'broadcast',
+            event: 'message',
+            payload: broadcastMsg,
+          });
+        } catch {
+        }
+      } else {
+        pendingBroadcastRef.current.push(broadcastMsg);
+      }
+
+      markAdminRead(selectedConversationId);
     } catch (e: any) {
+      if (messageId) {
+        setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      }
       setError(e?.message || 'فشل إرسال الرسالة');
     } finally {
       setSending(false);
