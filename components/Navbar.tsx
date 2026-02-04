@@ -152,7 +152,11 @@ const Navbar: React.FC<NavbarProps> = ({ onHomeClick, isAuthenticated, userName,
                نبض <span className="text-primary">التمريض</span>
              </span>
              <div className="w-10 h-10 sm:w-11 sm:h-11 bg-gradient-to-tr from-primary to-secondary rounded-full flex items-center justify-center text-white shadow-glow group-hover:rotate-12 transition-transform duration-500 overflow-hidden">
+<<<<<<< HEAD
                <img src={logoUrl} alt="logo" className="w-full h-full object-contain p-1" />
+=======
+               <img src={logoUrl} alt="logo" className="w-full h-full object-cover" />
+>>>>>>> 33ec02d0491928fe4fa8c29e2fc26dd1a02bd041
              </div>
           </div>
 
