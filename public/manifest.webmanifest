@@ -1,0 +1,24 @@
+{
+    "name": "أحمد محرم",
+    "short_name": "محرم",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#FAFAFA",
+    "theme_color": "#0f172a",
+    "lang": "ar",
+    "dir": "rtl",
+    "icons": [{
+            "src": "/pwa-icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/pwa-icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}

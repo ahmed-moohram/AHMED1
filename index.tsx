@@ -14,6 +14,14 @@ if (existingFavicon) {
   document.head.appendChild(link);
 }
 
+if ('serviceWorker' in navigator && !import.meta.env.DEV) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // ignore
+    });
+  });
+}
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
