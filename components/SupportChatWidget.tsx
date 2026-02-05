@@ -201,6 +201,9 @@ const SupportChatWidget: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }
               return [...prev, { ...(next as any), optimistic: false }];
             });
           })
+          .on('broadcast', { event: 'clear' }, () => {
+            setMessages([]);
+          })
           .on(
             'postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `conversation_id=eq.${conv.id}` },

@@ -177,6 +177,12 @@ create table if not exists public.support_banned_words (
 );
 
 create index if not exists support_banned_words_active_idx on public.support_banned_words(is_active);
+delete from public.support_banned_words a
+using public.support_banned_words b
+where a.id > b.id
+  and a.pattern = b.pattern
+  and a.is_regex = b.is_regex;
+create unique index if not exists support_banned_words_pattern_unique on public.support_banned_words(pattern, is_regex);
 
 create or replace function public.support_normalize_arabic(p_text text)
 returns text
@@ -189,6 +195,7 @@ begin
   t := coalesce(p_text, '');
   t := lower(t);
   t := regexp_replace(t, '[ً-ْـٰ]', '', 'g');
+  t := regexp_replace(t, '[0-9٠-٩]+', '', 'g');
   t := translate(t, 'أإآٱ', 'اااا');
   t := translate(t, 'ى', 'ي');
   t := translate(t, 'ة', 'ه');
@@ -283,3 +290,40 @@ create policy support_banned_words_delete_admin
 on public.support_banned_words
 for delete
 using (public.support_is_admin_or_master());
+
+create or replace function public.support_admin_clear_conversation(
+  p_conversation_id uuid,
+  p_delete_conversation boolean default false
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.support_is_admin_or_master() then
+    raise exception using message = 'غير مصرح';
+  end if;
+
+  if p_delete_conversation then
+    delete from public.support_conversations where id = p_conversation_id;
+    return;
+  end if;
+
+  delete from public.support_messages where conversation_id = p_conversation_id;
+
+  update public.support_conversations
+    set last_message_at = null,
+        last_message_body = null,
+        last_sender_role = null,
+        last_sender_id = null,
+        unread_user = 0,
+        unread_admin = 0,
+        user_last_read_at = null,
+        admin_last_read_at = null
+  where id = p_conversation_id;
+end;
+$$;
+
+revoke all on function public.support_admin_clear_conversation(uuid, boolean) from public;
+grant execute on function public.support_admin_clear_conversation(uuid, boolean) to authenticated;

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Send, MessageSquareText, Lock, Unlock } from 'lucide-react';
+import { Search, Send, MessageSquareText, Lock, Unlock, Trash2 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 type ConversationRow = {
@@ -85,6 +85,7 @@ const AdminMessages: React.FC<{ currentUserId: string | null }> = ({ currentUser
   const [messages, setMessages] = useState<UiMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [draft, setDraft] = useState('');
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const msgChannelRef = useRef<any>(null);
@@ -133,6 +134,52 @@ const AdminMessages: React.FC<{ currentUserId: string | null }> = ({ currentUser
     }
   };
 
+  const clearSelectedChat = async () => {
+    if (!selectedConversationId) return;
+    if (!isSupabaseConfigured) return;
+    const ok = globalThis.confirm?.('مسح كل رسائل هذه المحادثة؟ لا يمكن التراجع.');
+    if (!ok) return;
+
+    setClearing(true);
+    setError(null);
+    try {
+      const { error } = await supabase.rpc('support_admin_clear_conversation', {
+        p_conversation_id: selectedConversationId,
+        p_delete_conversation: false,
+      });
+      if (error) throw error;
+
+      setMessages([]);
+      const nowIso = new Date().toISOString();
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === selectedConversationId
+            ? {
+                ...c,
+                updated_at: nowIso,
+                last_message_at: null,
+                last_message_body: null,
+                unread_admin: 0,
+              }
+            : c
+        )
+      );
+
+      try {
+        void msgChannelRef.current?.send({
+          type: 'broadcast',
+          event: 'clear',
+          payload: { conversation_id: selectedConversationId },
+        });
+      } catch {
+      }
+    } catch (e: any) {
+      setError(e?.message || 'فشل مسح المحادثة');
+    } finally {
+      setClearing(false);
+    }
+  };
+
   const fetchMessages = async (conversationId: string) => {
     if (!isSupabaseConfigured) return;
     setMessagesLoading(true);
@@ -146,10 +193,9 @@ const AdminMessages: React.FC<{ currentUserId: string | null }> = ({ currentUser
       if (error) throw error;
       const incoming = ((data || []) as UiMessage[]).map((m) => ({ ...m, optimistic: false }));
       setMessages((prev) => {
-        const map = new Map<string, UiMessage>();
-        prev.forEach((m) => map.set(m.id, m));
-        incoming.forEach((m) => map.set(m.id, m));
-        return Array.from(map.values()).sort(
+        const incomingIds = new Set(incoming.map((m) => m.id));
+        const optimisticOnly = prev.filter((m) => m.optimistic && !incomingIds.has(m.id));
+        return [...incoming, ...optimisticOnly].sort(
           (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
       });
@@ -203,6 +249,9 @@ const AdminMessages: React.FC<{ currentUserId: string | null }> = ({ currentUser
           if (prev.some((m) => m.id === next.id)) return prev;
           return [...prev, { ...(next as any), optimistic: false }];
         });
+      })
+      .on('broadcast', { event: 'clear' }, () => {
+        setMessages([]);
       })
       .on(
         'postgres_changes',
@@ -462,14 +511,26 @@ const AdminMessages: React.FC<{ currentUserId: string | null }> = ({ currentUser
                     </div>
                   </div>
 
-                  <button
-                    onClick={toggleClosed}
-                    className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2 ${selectedConversation.is_closed ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-dark text-white hover:bg-black'}`}
-                    title={selectedConversation.is_closed ? 'فتح المحادثة' : 'إغلاق المحادثة'}
-                  >
-                    {selectedConversation.is_closed ? <Unlock size={14} /> : <Lock size={14} />}
-                    {selectedConversation.is_closed ? 'فتح' : 'إغلاق'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={clearSelectedChat}
+                      disabled={clearing}
+                      className="px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-60"
+                      title="مسح كل الرسائل"
+                    >
+                      <Trash2 size={14} />
+                      {clearing ? 'جاري المسح...' : 'مسح الشات'}
+                    </button>
+
+                    <button
+                      onClick={toggleClosed}
+                      className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2 ${selectedConversation.is_closed ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-dark text-white hover:bg-black'}`}
+                      title={selectedConversation.is_closed ? 'فتح المحادثة' : 'إغلاق المحادثة'}
+                    >
+                      {selectedConversation.is_closed ? <Unlock size={14} /> : <Lock size={14} />}
+                      {selectedConversation.is_closed ? 'فتح' : 'إغلاق'}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex-1 bg-gray-50 p-4 overflow-y-auto">
