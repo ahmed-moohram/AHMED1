@@ -431,17 +431,17 @@ function App() {
            </div>
            <div className="container mx-auto px-4 text-center relative">
              <div className="max-w-4xl mx-auto">
-               <h2 className="text-2xl font-black text-dark tracking-tighter">أحمد محرم</h2>
+               <h2 className="text-2xl font-black text-dark tracking-tighter">نبض التمريض</h2>
                <div className="mt-2 text-[12px] font-bold text-gray-400">نبض التمريض</div>
 
-               <div className="mt-10 grid grid-cols-2 gap-4 sm:gap-6 text-right">
+               <div className="mt-10 grid grid-cols-1 gap-4 sm:gap-6 text-right">
                  <motion.div
                    whileHover={{ y: -3 }}
                    transition={{ type: 'spring', stiffness: 260, damping: 22 }}
                    className="rounded-3xl border border-gray-200/70 bg-white/80 p-4 sm:p-6 shadow-[0_8px_26px_-18px_rgba(0,0,0,0.22)] hover:shadow-[0_18px_50px_-22px_rgba(0,0,0,0.26)] transition-shadow"
                  >
                    <div className="text-[13px] sm:text-sm font-black text-dark">تحميل التطبيق</div>
-                   <div className="mt-2 text-[12px] font-black text-dark/80">أحمد محرم</div>
+                   <div className="mt-2 text-[12px] font-black text-dark/80">نبض التمريض</div>
                    <div className="mt-1 text-[11px] font-bold text-gray-400">Android APK</div>
                    <a
                      href={apkHref}
@@ -452,30 +452,6 @@ function App() {
                      لو عايز تحمل التطبيق اضغط هنا
                    </a>
                    <div className="mt-3 text-[11px] font-bold text-gray-500 text-center">بعد التحميل فعّل (Install from unknown sources)</div>
-                 </motion.div>
-
-                 <motion.div
-                   whileHover={{ y: -3 }}
-                   transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                   className="rounded-3xl border border-gray-200/70 bg-white/80 p-4 sm:p-6 shadow-[0_8px_26px_-18px_rgba(0,0,0,0.22)] hover:shadow-[0_18px_50px_-22px_rgba(0,0,0,0.26)] transition-shadow"
-                 >
-                   <div className="text-[13px] sm:text-sm font-black text-dark">تواصل واتساب</div>
-                   <div className="mt-1 text-[11px] font-bold text-gray-400" dir="ltr">+20 100 520 9667</div>
-                   <div className="mt-4 flex items-center justify-center">
-                     <a
-                       href="https://wa.me/201005209667"
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       aria-label="WhatsApp"
-                       title="WhatsApp"
-                       className="inline-flex items-center justify-center w-14 h-14 bg-[#25D366] text-white rounded-full hover:bg-[#20bd5a] hover:shadow-lg hover:shadow-green-400/30 transition-all duration-300 font-bold group hover:scale-105 active:scale-100"
-                     >
-                       <svg viewBox="0 0 32 32" className="w-7 h-7" fill="currentColor" aria-hidden="true">
-                         <path d="M16.04 3C9.39 3 4 8.39 4 15.04c0 2.35.68 4.64 1.97 6.6L4 29l7.58-1.93a12.02 12.02 0 0 0 4.46.85h.01C22.61 27.92 28 22.53 28 15.88 28 9.23 22.65 3 16.04 3zm6.97 17.45c-.29.82-1.44 1.5-2.37 1.7-.64.14-1.47.25-4.77-1.02-4.22-1.65-6.93-5.7-7.14-5.97-.2-.27-1.71-2.28-1.71-4.35 0-2.07 1.08-3.09 1.46-3.51.38-.42.83-.53 1.1-.53.27 0 .55 0 .79.01.26.01.6-.1.94.72.35.82 1.19 2.84 1.29 3.04.1.2.17.44.03.71-.13.27-.2.44-.4.68-.2.24-.42.53-.6.71-.2.2-.41.41-.18.81.23.4 1.02 1.68 2.19 2.72 1.51 1.35 2.79 1.77 3.19 1.97.4.2.64.17.88-.1.24-.27 1.01-1.18 1.28-1.58.27-.4.54-.33.9-.2.37.13 2.34 1.11 2.74 1.31.4.2.67.3.77.47.1.17.1.99-.19 1.81z" />
-                       </svg>
-                     </a>
-                   </div>
-                   <div className="mt-3 text-[11px] font-bold text-gray-500 text-center">الرد داخل المنصة أو عبر واتساب</div>
                  </motion.div>
                </div>
 
