@@ -43,6 +43,23 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
 
+  const tryStoreStudentCredential = async (userId: string, plainPassword: string) => {
+    if (!isSupabaseConfigured) return;
+    const uid = String(userId || '').trim();
+    const pw = String(plainPassword || '');
+    if (!uid || !pw) return;
+    try {
+      const { error } = await supabase.from('student_credentials').insert([{ user_id: uid, password: pw }]);
+      if (error) {
+        const msg = String((error as any)?.message || '').toLowerCase();
+        const isDuplicate = msg.includes('duplicate key') || msg.includes('already exists') || msg.includes('unique constraint');
+        if (!isDuplicate) console.warn('student_credentials insert failed', error);
+      }
+    } catch (e) {
+      console.warn('student_credentials insert failed', e);
+    }
+  };
+
   // Helper: Sanitize Input (Arabic numerals to English, remove spaces, handle prefixes)
   const sanitizeInput = (str: string) => {
     // 1. Handle explicit email
@@ -136,6 +153,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
                 });
                 if (!error && data.user) {
                     success = true;
+                    await tryStoreStudentCredential(data.user.id, cleanPassword);
                     await handlePostLogin(data.user.id, candidateId);
                 } else {
                     lastError = error;
@@ -155,6 +173,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
 
                 if (!error && data.user) {
                     success = true;
+                    await tryStoreStudentCredential(data.user.id, cleanPassword);
                     await handlePostLogin(data.user.id, candidateId);
                 } else {
                     lastError = error;
@@ -181,6 +200,9 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
           }
         });
         if (error) throw error;
+        if (data?.user?.id) {
+          await tryStoreStudentCredential(data.user.id, cleanPassword);
+        }
         // Treat 000... typo as admin too just in case
         const masterIds = ['01005209667', '0005209667'];
         onLoginSuccess(masterIds.includes(cleanId));

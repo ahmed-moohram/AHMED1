@@ -57,6 +57,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const userId = String(body?.userId || "").trim();
+    const requestedPassword = String(body?.password || "").trim();
     if (!userId) {
       return new Response(JSON.stringify({ error: "userId is required" }), {
         status: 400,
@@ -89,12 +90,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
-    const bytes = new Uint8Array(12);
-    crypto.getRandomValues(bytes);
-    const password = Array.from(bytes)
-      .map((b) => alphabet[b % alphabet.length])
-      .join("");
+    const password = requestedPassword || `Ahmed@${studentId}`;
+    if (password.length < 6) {
+      return new Response(JSON.stringify({ error: "Password too short" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { error: setError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       password,
@@ -105,6 +107,17 @@ Deno.serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    try {
+      const { error: credError } = await supabaseAdmin
+        .from("student_credentials")
+        .upsert({ user_id: userId, password }, { onConflict: "user_id" });
+      if (credError) {
+        console.warn("student_credentials upsert failed", credError);
+      }
+    } catch (e) {
+      console.warn("student_credentials upsert failed", e);
     }
 
     return new Response(JSON.stringify({ password }), {

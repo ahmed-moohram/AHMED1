@@ -28,6 +28,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
     const [studentSearchDraft, setStudentSearchDraft] = useState('');
     const [studentSearch, setStudentSearch] = useState('');
     const [copiedUserId, setCopiedUserId] = useState<string | null>(null);
+    const [passwordByUserId, setPasswordByUserId] = useState<Record<string, string>>({});
+    const [settingPasswordUserId, setSettingPasswordUserId] = useState<string | null>(null);
     
     // Modal States
     const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
@@ -40,6 +42,57 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
 
     const [uploadingCourseThumbnail, setUploadingCourseThumbnail] = useState(false);
     const [uploadingLessonVideo, setUploadingLessonVideo] = useState(false);
+
+    const formatStudentPassword = (sid: string) => {
+        const clean = String(sid || '').trim();
+        return clean ? `Ahmed@${clean}` : '';
+    };
+
+    const copyText = async (text: string, userId?: string) => {
+        const val = String(text || '').trim();
+        if (!val) return;
+        try {
+            await navigator.clipboard.writeText(val);
+            if (userId) {
+                setCopiedUserId(userId);
+                window.setTimeout(() => {
+                    setCopiedUserId((prev) => (prev === userId ? null : prev));
+                }, 1500);
+            }
+        } catch {
+            alert('تعذر النسخ');
+        }
+    };
+
+    const fetchStudentCredentialsPasswords = async ({ userIds, reset }: { userIds: string[]; reset: boolean }) => {
+        if (!isSupabaseConfigured) return;
+        if (!showAllUsers) return;
+        const ids = (userIds || []).map((x) => String(x || '').trim()).filter(Boolean);
+        if (reset) {
+            setPasswordByUserId({});
+        }
+        if (!ids.length) return;
+        try {
+            const { data, error } = await supabase
+                .from('student_credentials')
+                .select('user_id, password')
+                .in('user_id', ids);
+            if (error) return;
+            const rows = (data as any[]) || [];
+            if (!rows.length) return;
+            setPasswordByUserId((prev) => {
+                const next = { ...prev };
+                for (const row of rows) {
+                    const uid = String(row?.user_id || '').trim();
+                    const pw = String(row?.password || '').trim();
+                    if (uid && pw) next[uid] = pw;
+                }
+                return next;
+            });
+        } catch {
+            return;
+        }
+    };
 
     const uploadToStorage = async ({ bucket, folder, file }: { bucket: string; folder: string; file: File }) => {
         if (!isSupabaseConfigured) throw new Error('Supabase غير مُعد');
@@ -152,6 +205,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
             setStudents((prev) => (reset ? (data as any) : [...prev, ...(data as any)]));
             setStudentsTotal(count);
             setStudentsPage(page);
+
+            await fetchStudentCredentialsPasswords({
+                userIds: (data || [])
+                    .filter((x: any) => String((x as any)?.role || '') === 'student')
+                    .map((x: any) => String((x as any)?.id || '')),
+                reset
+            });
+
+            if (seq !== studentsFetchSeq.current) return;
 
             const received = data?.length || 0;
             const hasMore = typeof count === 'number' ? from + received < count : received === STUDENTS_PAGE_SIZE;
@@ -301,23 +363,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
         }
     };
 
-     const handleResetStudentPassword = async (userId: string) => {
+     const handleResetStudentPassword = async (userId: string, studentId?: string | null) => {
          if (!isSupabaseConfigured) return;
          if (!window.confirm('سيتم تعيين كلمة سر جديدة لهذا الطالب. هل تريد المتابعة؟')) return;
+         const defaultPassword = studentId ? formatStudentPassword(studentId) : '';
+         const input = window.prompt('اكتب كلمة السر الجديدة (6 أحرف على الأقل)', defaultPassword) ?? '';
+         const passwordCandidate = String(input || '').trim();
+         if (!passwordCandidate) return;
+         if (passwordCandidate.length < 6) {
+             alert('كلمة المرور ضعيفة (يجب أن تكون 6 أحرف على الأقل)');
+             return;
+         }
+
+         setPasswordByUserId((prev) => ({ ...prev, [userId]: passwordCandidate }));
+         await copyText(passwordCandidate, userId);
+         setSettingPasswordUserId(userId);
          try {
              const { data, error } = await supabase.functions.invoke('admin-set-password', {
-                 body: { userId }
+                 body: { userId, password: passwordCandidate || undefined }
              });
              if (error) throw error;
-             const newPassword = (data as any)?.password;
+             const newPassword = String((data as any)?.password || passwordCandidate || '').trim();
              if (!newPassword) throw new Error('لم يتم استلام كلمة السر من السيرفر');
-             try {
-                 await navigator.clipboard.writeText(newPassword);
-                 alert(`تم تعيين كلمة السر ونسخها: ${newPassword}`);
-             } catch {
-                 alert(`تم تعيين كلمة السر: ${newPassword}`);
-             }
+             setPasswordByUserId((prev) => ({ ...prev, [userId]: newPassword }));
+             await copyText(newPassword, userId);
          } catch (e: any) {
+            setPasswordByUserId((prev) => {
+                const next = { ...prev };
+                delete next[userId];
+                return next;
+            });
             const raw = String(e?.message || e?.error || '').toLowerCase();
             const isNotFound = raw.includes('requested function was not found') || raw.includes('not_found') || raw.includes('not found');
             const isFetchFail = raw.includes('failed to fetch') || raw.includes('network') || raw.includes('err_failed');
@@ -328,6 +403,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
             } else {
                 alert(e?.message || 'فشل تعيين كلمة السر');
             }
+         } finally {
+            setSettingPasswordUserId((prev) => (prev === userId ? null : prev));
          }
      };
 
@@ -578,7 +655,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                         {showAllUsers && (
                                             <td className="p-3 sm:p-4">
                                                 {(student as any).role === 'student' && student.student_id ? (
-                                                    <span className="text-xs font-bold text-gray-400">—</span>
+                                                    passwordByUserId[student.id] ? (
+                                                        <div className="flex items-center gap-2 whitespace-nowrap">
+                                                            <span className="inline-flex font-mono text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg whitespace-nowrap text-xs">
+                                                                {passwordByUserId[student.id]}
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => copyText(passwordByUserId[student.id], student.id)}
+                                                                className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 bg-white hover:bg-gray-50"
+                                                                title="نسخ كلمة السر"
+                                                            >
+                                                                <Copy size={14} />
+                                                            </button>
+                                                            {copiedUserId === student.id && (
+                                                                <span className="text-xs font-bold text-green-600">تم النسخ</span>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs font-bold text-gray-400">—</span>
+                                                    )
                                                 ) : (
                                                     <span className="text-xs text-gray-400">—</span>
                                                 )}
@@ -595,13 +691,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                             <div className="flex gap-2 flex-wrap">
                                                 {showAllUsers && (student as any).role === 'student' && Boolean(student.student_id) && (
                                                     <button
-                                                        disabled={student.id === currentUserId}
-                                                        onClick={() => handleResetStudentPassword(student.id)}
-                                                        className={`px-3 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1 ${student.id === currentUserId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                        disabled={student.id === currentUserId || settingPasswordUserId === student.id}
+                                                        onClick={() => handleResetStudentPassword(student.id, String(student.student_id || ''))}
+                                                        className={`px-3 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1 ${student.id === currentUserId || settingPasswordUserId === student.id ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                         title="إعادة تعيين كلمة السر"
                                                     >
                                                         <KeyRound size={14} />
-                                                        إعادة تعيين كلمة السر
+                                                        {settingPasswordUserId === student.id ? 'جاري التعيين...' : 'إعادة تعيين كلمة السر'}
                                                     </button>
                                                 )}
                                                 <button
