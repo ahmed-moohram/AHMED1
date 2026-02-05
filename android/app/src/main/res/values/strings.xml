@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">نبض التمريض</string>
-    <string name="title_activity_main">نبض التمريض</string>
-    <string name="package_name">com.ahmed.mohram</string>
-    <string name="custom_url_scheme">com.ahmed.mohram</string>
-</resources>
