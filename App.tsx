@@ -208,7 +208,7 @@ function App() {
       if (!error && data && data.length > 0) {
           const mappedCourses = data.map((c: any) => ({
               ...c,
-              lessons: c.lessons.map((l: any) => ({
+              lessons: (c.lessons || []).map((l: any) => ({
                   ...l,
                   videoUrl: l.video_url,
                   pdfUrls: l.pdf_urls || [],

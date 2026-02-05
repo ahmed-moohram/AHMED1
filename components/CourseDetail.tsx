@@ -10,6 +10,8 @@ interface CourseDetailProps {
 }
 
 const CourseDetail: React.FC<CourseDetailProps> = ({ course, onBack, onLessonSelect }) => {
+  const lessons = Array.isArray((course as any)?.lessons) ? ((course as any).lessons as Lesson[]) : [];
+
   return (
     <div className="min-h-screen bg-background pt-24 pb-12 px-3 sm:px-4 md:px-8">
       <div className="max-w-6xl mx-auto">
@@ -27,7 +29,7 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ course, onBack, onLessonSel
               <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
                 {course.level}
               </span>
-              <span className="text-gray-400 text-sm">{course.lessons.length} محاضرات</span>
+              <span className="text-gray-400 text-sm">{lessons.length} محاضرات</span>
             </div>
             <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-dark mb-3 sm:mb-4">{course.title}</h1>
             <p className="text-sm sm:text-lg text-subtle max-w-2xl leading-relaxed">{course.description}</p>
@@ -36,7 +38,7 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ course, onBack, onLessonSel
 
         {/* Lectures Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {course.lessons.map((lesson, index) => (
+          {lessons.map((lesson, index) => (
             <div
               key={lesson.id}
               onClick={() => !lesson.isLocked && onLessonSelect(lesson)}

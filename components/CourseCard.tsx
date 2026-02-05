@@ -10,6 +10,9 @@ interface CourseCardProps {
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, onClick, index }) => {
+  const firstTag = Array.isArray((course as any)?.tags) ? (course as any).tags[0] : undefined;
+  const lessonsCount = Array.isArray((course as any)?.lessons) ? (course as any).lessons.length : 0;
+
   return (
     <div
       onClick={() => onClick(course)}
@@ -45,11 +48,11 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onClick, index }) => {
         {/* Meta Info */}
         <div className="flex items-center gap-2 mb-3 opacity-60">
             <span className="text-xs font-semibold text-primary uppercase tracking-wide">
-                {course.tags[0]}
+                {firstTag || ''}
             </span>
             <span className="w-1 h-1 rounded-full bg-gray-300" />
             <span className="text-xs text-gray-500">
-                {course.lessons.length} دروس
+                {lessonsCount} دروس
             </span>
         </div>
 
