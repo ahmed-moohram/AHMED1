@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, ArrowUpLeft, ArrowRight, LogOut, Shield } from 'lucide-react';
+import { Play, ArrowUpLeft, ArrowRight, LogOut, Shield, Download } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Background from './components/Background';
 import CourseCard from './components/CourseCard';
@@ -13,6 +13,8 @@ import SupportChatWidget from './components/SupportChatWidget';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Course, Lesson, ViewState } from './types';
 import { COURSES as MOCK_COURSES } from './constants';
+
+const apkHref = new URL('./components/nursing-pulse.apk', import.meta.url).href;
 
 function App() {
   // Default to HOME so everyone can see the interface
@@ -425,6 +427,18 @@ function App() {
 
         <footer className="border-t border-gray-200/60 py-12 text-center bg-white/50 backdrop-blur-sm">
            <h2 className="text-2xl font-black text-dark mb-4 tracking-tighter">أحمد محرم</h2>
+
+           <div className="flex flex-col items-center justify-center gap-3 mb-8">
+              <a
+                href={apkHref}
+                download="nursing-pulse.apk"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-dark text-white font-black text-sm hover:bg-black transition-colors shadow-lg"
+              >
+                <Download size={18} />
+                لو عايز تحمل التطبيق اضغط هنا
+              </a>
+              <div className="text-[11px] font-bold text-gray-400">Android APK</div>
+           </div>
            
            <div className="flex flex-col items-center justify-center gap-3 mb-7">
               <p className="text-subtle text-xs font-medium">تواصل معنا مباشرة عبر واتساب</p>

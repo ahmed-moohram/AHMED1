@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ArrowLeft, Loader2, User, Fingerprint, X, Eye, EyeOff } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import eyeImage from './2.png';
+import eyeImage from './1.png';
 
 interface AuthProps {
   onLoginSuccess: (isAdmin: boolean) => void;
@@ -22,7 +22,7 @@ const RealisticEye = ({ isOpen, inputValue, isFocused }: { isOpen: boolean; inpu
         transition={{ type: 'spring', stiffness: 220, damping: 18 }}
       >
         <div className="w-full h-full rounded-full bg-white overflow-hidden">
-          <img src={eyeImage} alt="eye" className="w-full h-full object-cover" draggable={false} />
+          <img src={eyeImage} alt="eye" className="w-full h-full object-contain p-2" draggable={false} />
         </div>
       </motion.div>
     </div>
