@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Play, FileText, Mic, Download, ExternalLink, Headphones } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { Course, Lesson } from '../types';
 
 interface VideoPlayerProps {
@@ -13,6 +15,29 @@ interface VideoPlayerProps {
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [resourceViewer, setResourceViewer] = useState<null | { kind: 'pdf' | 'audio'; title: string; url: string }>(null);
+
+  const openExternalUrl = async (url: string) => {
+    const isNative = Capacitor.isNativePlatform?.() ?? false;
+    if (isNative) {
+      await Browser.open({ url });
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const openResource = async (viewer: { kind: 'pdf' | 'audio'; title: string; url: string }) => {
+    const isNative = Capacitor.isNativePlatform?.() ?? false;
+    const isDrive = Boolean(getDriveFileId(viewer.url));
+
+    // PDF rendering is unreliable inside Android WebView. Use in-app browser.
+    if (isNative && (viewer.kind === 'pdf' || isDrive)) {
+      const url = toDrivePreviewUrl(viewer.url);
+      await openExternalUrl(url);
+      return;
+    }
+
+    setResourceViewer(viewer);
+  };
 
   const isYouTubeUrl = (url: string) => {
     try {
@@ -175,7 +200,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
                           <button
                             key={idx}
                             type="button"
-                            onClick={() => setResourceViewer({ kind: 'pdf', title: pdf.title, url: pdf.url })}
+                            onClick={() => void openResource({ kind: 'pdf', title: pdf.title, url: pdf.url })}
                             className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-transparent hover:bg-white hover:border-red-100 hover:shadow-md transition-all group/item"
                           >
                             <div className="flex items-center gap-3 overflow-hidden">
@@ -222,7 +247,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
                           <button
                             key={idx}
                             type="button"
-                            onClick={() => setResourceViewer({ kind: 'audio', title: audio.title, url: audio.url })}
+                            onClick={() => void openResource({ kind: 'audio', title: audio.title, url: audio.url })}
                             className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-transparent hover:bg-white hover:border-purple-100 hover:shadow-md transition-all group/item"
                           >
                             <div className="flex items-center gap-3 overflow-hidden">
@@ -259,15 +284,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
                 <div className="font-black text-dark truncate">{resourceViewer.title}</div>
               </div>
               <div className="flex items-center gap-2">
-                <a
-                  href={resourceViewer.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => void openExternalUrl(toDrivePreviewUrl(resourceViewer.url))}
                   className="h-10 px-4 rounded-full bg-gray-50 border border-gray-200 text-gray-700 font-bold text-xs flex items-center gap-2 hover:bg-white"
                 >
                   <ExternalLink size={14} />
                   فتح خارجي
-                </a>
+                </button>
                 <button
                   type="button"
                   onClick={() => setResourceViewer(null)}

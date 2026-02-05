@@ -434,6 +434,7 @@ function App() {
                <h2 className="text-2xl font-black text-dark tracking-tighter">نبض التمريض</h2>
                <div className="mt-2 text-[12px] font-bold text-gray-400">نبض التمريض</div>
 
+               {/*
                <div className="mt-10 grid grid-cols-1 gap-4 sm:gap-6 text-right">
                  <motion.div
                    whileHover={{ y: -3 }}
@@ -454,6 +455,7 @@ function App() {
                    <div className="mt-3 text-[11px] font-bold text-gray-500 text-center">بعد التحميل فعّل (Install from unknown sources)</div>
                  </motion.div>
                </div>
+               */}
 
                <div className="mt-10 text-[11px] text-gray-400">جميع الحقوق محفوظة ل احمد محرم© 2026.</div>
              </div>
