@@ -33,6 +33,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
 
   // Form Fields
   const [fullName, setFullName] = useState('');
@@ -90,6 +91,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setInfo('');
 
     try {
       // 1. Clean the input
@@ -110,6 +112,11 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
         if (['01005209667', '0005209667'].includes(cleanId)) {
            onLoginSuccess(true);
         } else {
+           if (!isLogin) {
+             setInfo('تم إرسال طلبك، الأدمن هيراجع الطلب وبعدها تقدر تدخل');
+             setIsLogin(true);
+             return;
+           }
            onLoginSuccess(false);
         }
         return;
@@ -203,9 +210,8 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
         if (data?.user?.id) {
           await tryStoreStudentCredential(data.user.id, cleanPassword);
         }
-        // Treat 000... typo as admin too just in case
-        const masterIds = ['01005209667', '0005209667'];
-        onLoginSuccess(masterIds.includes(cleanId));
+        setInfo('تم إنشاء الحساب. الأدمن هيراجع الطلب وبعدها تقدر تسجل دخول.');
+        setIsLogin(true);
       }
     } catch (err: any) {
       console.error(err);
@@ -229,9 +235,21 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
   const handlePostLogin = async (userId: string, usedId: string) => {
     const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, approval_status')
         .eq('id', userId)
         .single();
+
+    const approval = String((profile as any)?.approval_status || 'approved');
+    if (approval === 'pending') {
+      setInfo('تم تسجيل الدخول لكن الحساب قيد المراجعة من الأدمن. حاول لاحقًا.');
+      await supabase.auth.signOut();
+      return;
+    }
+    if (approval === 'rejected') {
+      setInfo('تم رفض طلبك. تواصل مع الأدمن.');
+      await supabase.auth.signOut();
+      return;
+    }
     
     // Check for Master Admin IDs (including common typo)
     const masterIds = ['01005209667', '0005209667'];
@@ -292,6 +310,15 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {info && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-blue-700 text-xs font-bold text-center bg-blue-50 py-2 rounded-lg"
+            >
+              {info}
+            </motion.div>
+          )}
           <AnimatePresence mode='popLayout'>
             {!isLogin && (
               <motion.div
@@ -372,6 +399,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
             onClick={() => {
                 setIsLogin(!isLogin);
                 setError('');
+                setInfo('');
                 setPassword('');
             }}
             className="text-sm text-gray-500 font-medium hover:text-primary transition-colors underline decoration-dotted underline-offset-4"

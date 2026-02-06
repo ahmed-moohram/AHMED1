@@ -15,13 +15,16 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, showAllUsers }) => {
     const STUDENTS_PAGE_SIZE = 10;
 
-    const [activeTab, setActiveTab] = useState<'students' | 'courses' | 'messages'>(initialTab || 'courses');
+    const [activeTab, setActiveTab] = useState<'students' | 'courses' | 'messages' | 'approvals'>(initialTab || 'courses');
     const [students, setStudents] = useState<UserProfile[]>([]);
     const [studentsTotal, setStudentsTotal] = useState<number | null>(null);
     const [studentsPage, setStudentsPage] = useState(0);
     const [studentsHasMore, setStudentsHasMore] = useState(true);
     const [studentsLoading, setStudentsLoading] = useState(false);
     const studentsFetchSeq = useRef(0);
+
+    const [pendingApprovals, setPendingApprovals] = useState<UserProfile[]>([]);
+    const [approvalsLoading, setApprovalsLoading] = useState(false);
 
     const [courses, setCourses] = useState<Course[]>([]);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -245,6 +248,60 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
         }
     }, [activeTab, showAllUsers]);
 
+    const fetchPendingApprovals = async () => {
+        if (!isSupabaseConfigured) {
+            setPendingApprovals([]);
+            return;
+        }
+        setApprovalsLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id, full_name, student_id, approval_status, approval_updated_at, approval_note')
+                .eq('approval_status', 'pending')
+                .order('approval_updated_at', { ascending: true })
+                .limit(300);
+            if (error) throw error;
+            setPendingApprovals((data || []) as any);
+        } catch (e: any) {
+            alert(e?.message || 'فشل تحميل طلبات الدخول');
+            setPendingApprovals([]);
+        } finally {
+            setApprovalsLoading(false);
+        }
+    };
+
+    const handleApproveUser = async (userId: string) => {
+        if (!isSupabaseConfigured) return;
+        if (!window.confirm('قبول هذا المستخدم؟')) return;
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ approval_status: 'approved', approval_updated_at: new Date().toISOString(), approval_note: null })
+                .eq('id', userId);
+            if (error) throw error;
+            await fetchPendingApprovals();
+        } catch (e: any) {
+            alert(e?.message || 'فشل قبول المستخدم');
+        }
+    };
+
+    const handleRejectUser = async (userId: string) => {
+        if (!isSupabaseConfigured) return;
+        const note = window.prompt('سبب الرفض (اختياري)') || '';
+        if (!window.confirm('رفض هذا المستخدم؟')) return;
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ approval_status: 'rejected', approval_updated_at: new Date().toISOString(), approval_note: note || null })
+                .eq('id', userId);
+            if (error) throw error;
+            await fetchPendingApprovals();
+        } catch (e: any) {
+            alert(e?.message || 'فشل رفض المستخدم');
+        }
+    };
+
     useEffect(() => {
         if (!isSupabaseConfigured) return;
         let cancelled = false;
@@ -260,6 +317,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
             cancelled = true;
         };
     }, []);
+
+    useEffect(() => {
+        if (activeTab === 'approvals') {
+            fetchPendingApprovals();
+        }
+    }, [activeTab]);
 
     const fetchCourses = async () => {
         if (!isSupabaseConfigured) {
@@ -534,6 +597,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                         الطلاب المسجلين
                     </button>
                     <button 
+                        onClick={() => setActiveTab('approvals')}
+                        className={`flex-1 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base transition-all ${activeTab === 'approvals' ? 'bg-dark text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
+                    >
+                        <Users size={18} className="inline-block ml-2 mb-1" />
+                        طلبات الدخول
+                    </button>
+                    <button 
                         onClick={() => setActiveTab('messages')}
                         className={`flex-1 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base transition-all ${activeTab === 'messages' ? 'bg-dark text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
                     >
@@ -591,37 +661,105 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                             ))}
                         </div>
                     </div>
+                ) : activeTab === 'approvals' ? (
+                    <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+                        <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between gap-3">
+                            <div>
+                                <div className="text-lg font-black text-dark">طلبات الدخول</div>
+                                <div className="text-xs font-bold text-gray-500">المستخدمون الجدد (Pending)</div>
+                            </div>
+                            <button
+                                disabled={approvalsLoading}
+                                onClick={fetchPendingApprovals}
+                                className={`px-4 py-2.5 rounded-xl border font-bold text-sm ${
+                                    approvalsLoading
+                                        ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'
+                                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                }`}
+                            >
+                                {approvalsLoading ? 'جاري التحميل...' : 'تحديث'}
+                            </button>
+                        </div>
+
+                        <div className="w-full overflow-x-auto">
+                            <table className="w-full min-w-[760px]">
+                                <thead className="bg-gray-50 border-b border-gray-100">
+                                    <tr>
+                                        <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">الاسم</th>
+                                        <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">ID</th>
+                                        <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">الحالة</th>
+                                        <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {pendingApprovals.map((u) => (
+                                        <tr key={u.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                                            <td className="p-3 sm:p-4 font-bold text-dark text-sm whitespace-nowrap">{u.full_name || '—'}</td>
+                                            <td className="p-3 sm:p-4">
+                                                <span className="inline-flex font-mono text-primary bg-primary/5 px-3 py-1.5 rounded-lg whitespace-nowrap">{u.student_id || '—'}</span>
+                                            </td>
+                                            <td className="p-3 sm:p-4">
+                                                <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">قيد المراجعة</span>
+                                            </td>
+                                            <td className="p-3 sm:p-4">
+                                                <div className="flex gap-2 flex-wrap">
+                                                    <button
+                                                        onClick={() => handleApproveUser(u.id)}
+                                                        className="px-3 py-2 rounded-xl text-xs font-bold bg-green-600 text-white hover:bg-green-700"
+                                                    >
+                                                        قبول
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRejectUser(u.id)}
+                                                        className="px-3 py-2 rounded-xl text-xs font-bold bg-red-600 text-white hover:bg-red-700"
+                                                    >
+                                                        رفض
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="p-4 border-t border-gray-100 bg-white">
+                            {approvalsLoading ? (
+                                <div className="text-center text-xs font-bold text-gray-400">جاري التحميل...</div>
+                            ) : pendingApprovals.length === 0 ? (
+                                <div className="text-center text-xs font-bold text-gray-400">لا توجد طلبات جديدة</div>
+                            ) : (
+                                <div className="text-center text-xs font-bold text-gray-400">الإجمالي: {pendingApprovals.length}</div>
+                            )}
+                        </div>
+                    </div>
                 ) : (
-                    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                        <div className="p-4 sm:p-5 border-b border-gray-100 bg-white">
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <div className="text-sm font-black text-dark">الطلاب</div>
-                                    <div className="text-xs font-bold text-gray-400">
-                                        المعروض: {students.length}{typeof studentsTotal === 'number' ? ` من ${studentsTotal}` : ''}
-                                    </div>
-                                </div>
-                                <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                                    <input
-                                        value={studentSearchDraft}
-                                        onChange={(e) => setStudentSearchDraft(e.target.value)}
-                                        placeholder="بحث بالاسم أو ID"
-                                        className="w-full sm:w-72 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 font-bold text-sm"
-                                    />
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={handleApplyStudentSearch}
-                                            className="px-4 py-2.5 rounded-xl bg-dark text-white font-bold text-sm hover:bg-black"
-                                        >
-                                            بحث
-                                        </button>
-                                        <button
-                                            onClick={handleClearStudentSearch}
-                                            className="px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50"
-                                        >
-                                            مسح
-                                        </button>
-                                    </div>
+                    <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+                        <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between gap-4">
+                            <div>
+                                <h2 className="text-xl font-bold text-dark">إدارة الطلاب</h2>
+                                <p className="text-gray-500 text-sm">عرض وإدارة حسابات الطلاب</p>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                <input
+                                    value={studentSearchDraft}
+                                    onChange={(e) => setStudentSearchDraft(e.target.value)}
+                                    placeholder="بحث بالاسم أو ID"
+                                    className="w-full sm:w-72 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 font-bold text-sm"
+                                />
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={handleApplyStudentSearch}
+                                        className="px-4 py-2.5 rounded-xl bg-dark text-white font-bold text-sm hover:bg-black"
+                                    >
+                                        بحث
+                                    </button>
+                                    <button
+                                        onClick={handleClearStudentSearch}
+                                        className="px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50"
+                                    >
+                                        مسح
+                                    </button>
                                 </div>
                             </div>
                         </div>

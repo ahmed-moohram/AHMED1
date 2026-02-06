@@ -29,6 +29,9 @@ export interface UserProfile {
   full_name: string;
   student_id: string;
   role: 'admin' | 'student';
+  approval_status?: 'pending' | 'approved' | 'rejected' | string;
+  approval_updated_at?: string | null;
+  approval_note?: string | null;
   is_banned?: boolean;
   ban_reason?: string | null;
   device_id?: string | null;
