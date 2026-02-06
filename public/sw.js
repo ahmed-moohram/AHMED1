@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moharam-pwa-v2';
+const CACHE_NAME = 'moharam-pwa-v3';
 const CORE_ASSETS = ['/', '/index.html', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
@@ -23,9 +23,15 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
     const req = event.request;
+    const url = new URL(req.url);
 
     // Only handle GET
     if (req.method !== 'GET') return;
+
+    // Never intercept APK downloads
+    if (url.origin === self.location.origin && url.pathname.endsWith('.apk')) {
+        return;
+    }
 
     // For navigation requests, try network first then fallback to cache
     if (req.mode === 'navigate') {
@@ -33,10 +39,10 @@ self.addEventListener('fetch', (event) => {
             fetch(req)
             .then((res) => {
                 const copy = res.clone();
-                caches.open(CACHE_NAME).then((cache) => cache.put('/', copy));
+                caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
                 return res;
             })
-            .catch(() => caches.match('/') || caches.match('/index.html'))
+            .catch(() => caches.match(req) || caches.match('/index.html'))
         );
         return;
     }
@@ -49,7 +55,6 @@ self.addEventListener('fetch', (event) => {
                 .then((res) => {
                     // Cache same-origin responses
                     try {
-                        const url = new URL(req.url);
                         if (url.origin === self.location.origin && res.ok) {
                             const copy = res.clone();
                             caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));

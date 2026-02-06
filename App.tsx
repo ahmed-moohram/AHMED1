@@ -15,7 +15,7 @@ import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Course, Lesson, ViewState } from './types';
 import { COURSES as MOCK_COURSES } from './constants';
 
-const apkHref = new URL('./components/Nursing-Pulse.apk', import.meta.url).href;
+const apkHref = '/Nursing-Pulse.apk';
 
 function App() {
   // Default to HOME so everyone can see the interface
