@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Play, FileText, Mic, Download, ExternalLink, Headphones } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
 import { Course, Lesson } from '../types';
 
 interface VideoPlayerProps {
@@ -19,8 +18,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
   const openExternalUrl = async (url: string) => {
     const isNative = Capacitor.isNativePlatform?.() ?? false;
     if (isNative) {
-      await Browser.open({ url });
-      return;
+      const browserPlugin = (Capacitor as any)?.Plugins?.Browser;
+      if (browserPlugin?.open) {
+        await browserPlugin.open({ url });
+        return;
+      }
     }
     window.open(url, '_blank', 'noopener,noreferrer');
   };
