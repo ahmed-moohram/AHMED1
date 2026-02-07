@@ -14,7 +14,18 @@ if (existingFavicon) {
   document.head.appendChild(link);
 }
 
-if ('serviceWorker' in navigator && !import.meta.env.DEV) {
+const shouldRegisterSw = (() => {
+  try {
+    if (!('serviceWorker' in navigator)) return false;
+    if (!import.meta.env.DEV) return true;
+    const host = window.location.hostname;
+    return host === 'localhost' || host === '127.0.0.1';
+  } catch {
+    return false;
+  }
+})();
+
+if (shouldRegisterSw) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {
       // ignore

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Sparkles, Menu, Search, User, X, LogIn, LogOut, ChevronDown } from 'lucide-react';
+import { Sparkles, Menu, Search, User, X, LogIn, LogOut, ChevronDown, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface NavbarProps {
@@ -17,6 +17,8 @@ const Navbar: React.FC<NavbarProps> = ({ onHomeClick, isAuthenticated, userName,
   const [scrolled, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,12 +41,54 @@ const Navbar: React.FC<NavbarProps> = ({ onHomeClick, isAuthenticated, userName,
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    
+
+    const checkInstalled = () => {
+      try {
+        const standalone =
+          window.matchMedia?.('(display-mode: standalone)')?.matches ||
+          (navigator as any)?.standalone === true;
+        setIsInstalled(Boolean(standalone));
+      } catch {
+        setIsInstalled(false);
+      }
+    };
+
+    const onBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+
+    const onAppInstalled = () => {
+      setInstallPrompt(null);
+      setIsInstalled(true);
+    };
+
+    checkInstalled();
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt as any);
+    window.addEventListener('appinstalled', onAppInstalled as any);
+
     return () => {
         window.removeEventListener('scroll', handleScroll);
         document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt as any);
+        window.removeEventListener('appinstalled', onAppInstalled as any);
     }
   }, []);
+
+  const handleInstallClick = async () => {
+    const p = installPrompt;
+    if (!p) {
+      alert('لو زر التثبيت مش ظاهر في المتصفح: افتح قائمة الثلاث نقط (⋮) ثم اختر Install app / Add to Home screen');
+      return;
+    }
+    try {
+      await p.prompt();
+      await p.userChoice;
+    } catch {
+    } finally {
+      setInstallPrompt(null);
+    }
+  };
 
   return (
     <>
@@ -129,6 +173,21 @@ const Navbar: React.FC<NavbarProps> = ({ onHomeClick, isAuthenticated, userName,
               <button className="hidden sm:flex w-11 h-11 rounded-full bg-white text-dark border border-gray-200 items-center justify-center hover:bg-gray-50 transition-colors">
                   <Search size={20} />
               </button>
+
+              {!isInstalled && (
+                <button
+                  onClick={() => void handleInstallClick()}
+                  className={`h-10 sm:h-11 px-3 sm:px-4 rounded-full items-center justify-center transition-colors shadow-md gap-2 font-bold text-xs flex ${
+                    installPrompt
+                      ? 'bg-primary text-white hover:bg-primary/90'
+                      : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                  }`}
+                  title="تثبيت التطبيق"
+                >
+                  <Download size={16} />
+                  <span className="hidden sm:inline">تثبيت</span>
+                </button>
+              )}
           </div>
 
           {/* Links (Center) - Desktop Only */}

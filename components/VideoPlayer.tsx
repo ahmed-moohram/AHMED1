@@ -28,16 +28,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
   };
 
   const openResource = async (viewer: { kind: 'pdf' | 'audio'; title: string; url: string }) => {
-    const isNative = Capacitor.isNativePlatform?.() ?? false;
-    const isDrive = Boolean(getDriveFileId(viewer.url));
-
-    // PDF rendering is unreliable inside Android WebView. Use in-app browser.
-    if (isNative && (viewer.kind === 'pdf' || isDrive)) {
-      const url = toDrivePreviewUrl(viewer.url);
-      await openExternalUrl(url);
-      return;
-    }
-
     setResourceViewer(viewer);
   };
 
