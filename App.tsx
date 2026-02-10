@@ -437,28 +437,6 @@ function App() {
                <h2 className="text-2xl font-black text-dark tracking-tighter">نبض التمريض</h2>
                <div className="mt-2 text-[12px] font-bold text-gray-400">نبض التمريض</div>
 
-               {!isNativePlatform && (
-                 <div className="mt-10 grid grid-cols-1 gap-4 sm:gap-6 text-right">
-                   <motion.div
-                     whileHover={{ y: -3 }}
-                     transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                     className="rounded-3xl border border-gray-200/70 bg-white/80 p-4 sm:p-6 shadow-[0_8px_26px_-18px_rgba(0,0,0,0.22)] hover:shadow-[0_18px_50px_-22px_rgba(0,0,0,0.26)] transition-shadow"
-                   >
-                     <div className="text-[13px] sm:text-sm font-black text-dark">تحميل التطبيق</div>
-                     <div className="mt-2 text-[12px] font-black text-dark/80">نبض التمريض</div>
-                     <div className="mt-1 text-[11px] font-bold text-gray-400">Android APK</div>
-                     <a
-                       href={apkHref}
-                       download="nursing-pulse.apk"
-                       className="group mt-5 w-full inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl bg-dark text-white font-black text-[12px] sm:text-sm hover:bg-black transition-all shadow-lg hover:shadow-xl active:scale-[0.99]"
-                     >
-                       <Download size={18} className="transition-transform group-hover:-translate-y-0.5" />
-                       لو عايز تحمل التطبيق اضغط هنا
-                     </a>
-                     <div className="mt-3 text-[11px] font-bold text-gray-500 text-center">بعد التحميل فعّل (Install from unknown sources)</div>
-                   </motion.div>
-                 </div>
-               )}
 
                <div className="mt-10 text-[11px] text-gray-400">جميع الحقوق محفوظة ل احمد محرم© 2026.</div>
              </div>
