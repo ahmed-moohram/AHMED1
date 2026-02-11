@@ -26,6 +26,7 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [didAutoRouteAdmin, setDidAutoRouteAdmin] = useState(false);
   const [userName, setUserName] = useState(''); // Store User Name
+  const [userProfile, setUserProfile] = useState<{phone?: string; student_id?: string} | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [banReason, setBanReason] = useState('');
@@ -168,6 +169,10 @@ function App() {
           masterIds.includes(emailId)
         );
         setUserName(profile?.full_name || 'طالب مجتهد');
+        setUserProfile({
+          phone: (profile as any)?.phone || '',
+          student_id: (profile as any)?.student_id || ''
+        });
 
         // If user was previously blocked but got unbanned, return them to HOME
         if (viewState === 'BANNED') {
@@ -458,7 +463,8 @@ function App() {
         <VideoPlayer 
           course={selectedCourse} 
           lesson={selectedLesson}
-          onBack={handleBackToCourse} 
+          onBack={handleBackToCourse}
+          userProfile={userProfile}
         />
       )}
       <SupportChatWidget isAuthenticated={isAuthenticated} isAdmin={isAdmin} />

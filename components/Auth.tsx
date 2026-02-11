@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowLeft, Loader2, User, Fingerprint, X, Eye, EyeOff } from 'lucide-react';
+import { Sparkles, ArrowLeft, Loader2, User, Fingerprint, X, Eye, EyeOff, Phone, CheckCircle } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import eyeImage from './1.png';
 
@@ -38,11 +38,19 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
   // Form Fields
   const [fullName, setFullName] = useState('');
   const [studentId, setStudentId] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   
   // UI State
   const [showPassword, setShowPassword] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [savedPhone, setSavedPhone] = useState('');
+
+  // Load saved phone from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('lastPhoneNumber');
+    if (stored) setSavedPhone(stored);
+  }, []);
 
   const tryStoreStudentCredential = async (userId: string, plainPassword: string) => {
     if (!isSupabaseConfigured) return;
@@ -195,6 +203,15 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
       } else {
         // Registration Logic: Enforce @academy.local
         const email = `${cleanId}@academy.local`;
+        const cleanPhone = phoneNumber.replace(/[^0-9]/g, '').trim();
+        
+        // Validate phone: must start with 0 and be exactly 11 digits
+        if (!cleanPhone || cleanPhone.length !== 11) {
+          throw new Error('رقم التلفون لازم يكون 11 رقم');
+        }
+        if (!cleanPhone.startsWith('0')) {
+          throw new Error('رقم التلفون لازم يبدأ ب 0');
+        }
         
         const { data, error } = await supabase.auth.signUp({
           email: email,
@@ -203,12 +220,16 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
             data: {
               full_name: fullName,
               student_id: cleanId,
+              phone: cleanPhone,
             }
           }
         });
         if (error) throw error;
         if (data?.user?.id) {
           await tryStoreStudentCredential(data.user.id, cleanPassword);
+          // Save phone to localStorage for display on login
+          localStorage.setItem('lastPhoneNumber', cleanPhone);
+          setSavedPhone(cleanPhone);
         }
         setInfo('تم إنشاء الحساب. الأدمن هيراجع الطلب وبعدها تقدر تسجل دخول.');
         setIsLogin(true);
@@ -235,9 +256,16 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
   const handlePostLogin = async (userId: string, usedId: string) => {
     const { data: profile } = await supabase
         .from('profiles')
-        .select('role, approval_status')
+        .select('role, approval_status, phone')
         .eq('id', userId)
         .single();
+
+    // Save phone to localStorage if available
+    const userPhone = (profile as any)?.phone || '';
+    if (userPhone) {
+      localStorage.setItem('lastPhoneNumber', userPhone);
+      setSavedPhone(userPhone);
+    }
 
     const approval = String((profile as any)?.approval_status || 'approved');
     if (approval === 'pending') {
@@ -326,7 +354,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
               >
-                <div className="relative group">
+                <div className="relative group mb-4">
                   <User className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
                     type="text"
@@ -341,6 +369,22 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
             )}
           </AnimatePresence>
 
+          {/* Phone field - always visible in register mode */}
+          {!isLogin && (
+            <div className="relative group mb-4">
+              <Phone className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="tel"
+                placeholder="رقم التلفون (11 رقم يبدأ بـ 0)"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                maxLength={11}
+                className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 pr-12 pl-4 text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-bold"
+                required={!isLogin}
+              />
+            </div>
+          )}
+
           <div className="relative group">
             <Fingerprint className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -352,6 +396,18 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
               required
             />
           </div>
+
+          {/* Saved Phone Display with Checkmark - only in login mode */}
+          {isLogin && savedPhone && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-center gap-2 text-green-600 bg-green-50 py-2 rounded-xl"
+            >
+              <CheckCircle size={18} />
+              <span className="font-bold text-sm">{savedPhone}</span>
+            </motion.div>
+          )}
 
           <div className="relative group">
             <button

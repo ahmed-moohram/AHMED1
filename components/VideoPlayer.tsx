@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Play, FileText, Mic, Download, ExternalLink, Headphones } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
@@ -9,11 +9,66 @@ interface VideoPlayerProps {
   course: Course;
   lesson: Lesson;
   onBack: () => void;
+  userProfile?: {phone?: string; student_id?: string} | null;
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => {
+const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack, userProfile }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [resourceViewer, setResourceViewer] = useState<null | { kind: 'pdf' | 'audio'; title: string; url: string }>(null);
+  const videoContainerRef = useRef<HTMLDivElement | null>(null);
+  const videoElRef = useRef<HTMLVideoElement | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onFsChange = () => {
+      const anyDoc = document as any;
+      const el: Element | null = document.fullscreenElement || anyDoc.webkitFullscreenElement || null;
+
+      const container = videoContainerRef.current;
+      const isContainerFs = !!el && !!container && el === container;
+      setIsFullscreen(isContainerFs);
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    (document as any).addEventListener?.('webkitfullscreenchange', onFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFsChange);
+      (document as any).removeEventListener?.('webkitfullscreenchange', onFsChange);
+    };
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      const el = videoContainerRef.current;
+      if (!el) return;
+
+      const anyDoc = document as any;
+      const fsEl = document.fullscreenElement || anyDoc.webkitFullscreenElement;
+      if (fsEl) {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else if (anyDoc.webkitExitFullscreen) anyDoc.webkitExitFullscreen();
+        return;
+      }
+
+      const anyEl = el as any;
+      if (el.requestFullscreen) {
+        await el.requestFullscreen();
+        return;
+      }
+      if (anyEl.webkitRequestFullscreen) {
+        anyEl.webkitRequestFullscreen();
+        return;
+      }
+
+      // iOS Safari doesn't support fullscreen on arbitrary divs;
+      // fallback to video element fullscreen when available.
+      const v = videoElRef.current as any;
+      if (v?.webkitEnterFullscreen) {
+        v.webkitEnterFullscreen();
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   const openExternalUrl = async (url: string) => {
     const isNative = Capacitor.isNativePlatform?.() ?? false;
@@ -43,6 +98,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
     }
   };
 
+  const isDriveUrl = (url: string) => {
+    try {
+      const u = new URL(url);
+      return u.hostname.includes('drive.google.com');
+    } catch {
+      return false;
+    }
+  };
+
   const getDriveFileId = (url: string) => {
     try {
       const u = new URL(url);
@@ -61,6 +125,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
     const id = getDriveFileId(url);
     if (!id) return url;
     return `https://drive.google.com/file/d/${id}/preview`;
+  };
+
+  const toDriveVideoUrl = (url: string) => {
+    const id = getDriveFileId(url);
+    if (!id) return url;
+    // Direct download/stream URL for Google Drive videos
+    return `https://drive.google.com/uc?export=download&id=${id}`;
   };
 
   const getYouTubeEmbedUrl = (url: string) => {
@@ -105,7 +176,52 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
            {/* Main Content (Video & Description) - Spans 2 cols on desktop */}
            <div className="lg:col-span-2 space-y-8">
               {/* Video Player Container */}
-              <div className="aspect-video bg-black rounded-[2rem] overflow-hidden shadow-2xl shadow-primary/5 relative group border-4 border-white/50 ring-1 ring-black/5">
+              <div
+                ref={videoContainerRef}
+                className="aspect-video bg-black rounded-[2rem] overflow-hidden shadow-2xl shadow-primary/5 relative group border-4 border-white/50 ring-1 ring-black/5"
+              >
+                <button
+                  type="button"
+                  onClick={() => void toggleFullscreen()}
+                  className="absolute top-3 left-3 z-30 px-3 py-1.5 rounded-lg bg-black/45 backdrop-blur-sm border border-white/20 text-white text-xs font-black pointer-events-auto"
+                >
+                  {isFullscreen ? 'تصغير' : 'تكبير'}
+                </button>
+
+                {/* Watermark Overlay - shows phone and student ID */}
+                {userProfile?.student_id && (
+                  <>
+                    {/* Non-blocking overlay */}
+                    <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
+                      <div className="absolute bottom-4 left-4 bg-black/40 backdrop-blur-sm text-white/80 px-3 py-1.5 rounded-lg text-[10px] font-medium border border-white/10">
+                        نبض التمريض ©
+                      </div>
+                    </div>
+
+                    {/* Click-blocking box over the share area (top-right) */}
+                    <div className="absolute top-0 right-0 z-20 pointer-events-auto">
+                      <div className="w-[90px] h-[60px] sm:w-[130px] sm:h-[70px] bg-black/45 backdrop-blur-sm border border-white/20 rounded-bl-2xl flex items-center justify-center px-3">
+                        <div className="text-white font-black text-xs sm:text-sm leading-tight text-center">
+                          <div>ID: {userProfile.student_id}</div>
+                          {userProfile.phone && (
+                            <div className="text-white/90 font-bold text-[11px] sm:text-xs mt-1">{userProfile.phone}</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {isPlaying && isDriveUrl(lesson.videoUrl) && (
+                  <>
+                    <div className="absolute bottom-2 right-2 z-30 w-[120px] h-[70px] pointer-events-auto" />
+                    <div className="absolute bottom-3 left-3 z-30 pointer-events-none">
+                      <div className="bg-black/45 backdrop-blur-sm border border-white/20 text-white text-[10px] font-bold px-2 py-1 rounded-lg">
+                        استخدم زر (تكبير) فوق
+                      </div>
+                    </div>
+                  </>
+                )}
                 {isPlaying ? (
                   isYouTubeUrl(lesson.videoUrl) ? (
                     <iframe
@@ -116,11 +232,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack }) => 
                       referrerPolicy="strict-origin-when-cross-origin"
                       title={lesson.title}
                     />
+                  ) : isDriveUrl(lesson.videoUrl) ? (
+                    <iframe
+                      src={toDrivePreviewUrl(lesson.videoUrl)}
+                      className="w-full h-full"
+                      allow="autoplay; encrypted-media; picture-in-picture"
+                      allowFullScreen
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      title={lesson.title}
+                    />
                   ) : (
                     <video 
+                      ref={videoElRef}
                       src={lesson.videoUrl} 
                       className="w-full h-full" 
                       controls 
+                      controlsList="nofullscreen"
+                      disablePictureInPicture
                       autoPlay
                     />
                   )
