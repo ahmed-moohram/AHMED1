@@ -227,6 +227,36 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
         if (error) throw error;
         if (data?.user?.id) {
           await tryStoreStudentCredential(data.user.id, cleanPassword);
+          
+          // Ensure profile is created with approval_status='pending'
+          // The trigger should handle this, but we add a fallback
+          const masterIds = ['01005209667', '0005209667', '01273460425'];
+          const isAdmin = masterIds.includes(cleanId);
+          
+          try {
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .upsert({
+                id: data.user.id,
+                full_name: fullName,
+                student_id: cleanId,
+                phone: cleanPhone,
+                role: isAdmin ? 'admin' : 'student',
+                approval_status: isAdmin ? 'approved' : 'pending',
+                approval_updated_at: new Date().toISOString(),
+              }, {
+                onConflict: 'id'
+              });
+            
+            if (profileError) {
+              console.warn('Profile creation/update failed:', profileError);
+              // Don't throw - the trigger might have already created it
+            }
+          } catch (profileErr) {
+            console.warn('Profile upsert error:', profileErr);
+            // Don't throw - continue with registration
+          }
+          
           // Save phone to localStorage for display on login
           localStorage.setItem('lastPhoneNumber', cleanPhone);
           setSavedPhone(cleanPhone);

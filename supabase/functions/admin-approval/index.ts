@@ -113,7 +113,12 @@ Deno.serve(async (req) => {
     if (action === "approve") {
       const { error } = await supabaseAdmin
         .from("profiles")
-        .update({ approval_status: "approved", approval_updated_at: new Date().toISOString() })
+        .update({ 
+          approval_status: "approved", 
+          approval_updated_at: new Date().toISOString(),
+          // Explicitly ensure is_banned is false when approving
+          is_banned: false
+        })
         .eq("id", userId);
 
       if (error) {

@@ -140,7 +140,9 @@ function App() {
           .eq('id', session.user.id)
           .single();
 
-        if ((profile as any)?.is_banned) {
+        // Check if user is banned (explicitly check for true, not just truthy)
+        const isBanned = Boolean((profile as any)?.is_banned === true);
+        if (isBanned) {
           setIsAuthenticated(false);
           setIsAdmin(false);
           setIsMasterAdmin(false);

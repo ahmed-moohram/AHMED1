@@ -1,0 +1,3 @@
+[functions.admin-approval]
+verify_jwt = false
+

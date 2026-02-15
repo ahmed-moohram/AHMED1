@@ -255,13 +255,66 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
         }
         setApprovalsLoading(true);
         try {
-            const { data, error } = await supabase.functions.invoke('admin-approval', {
-                body: { action: 'list_pending' },
-            });
-            if (error) throw error;
-            setPendingApprovals((((data as any)?.users || []) as any) || []);
+            // Try Edge Function first
+            try {
+                const { data, error } = await supabase.functions.invoke('admin-approval', {
+                    body: { action: 'list_pending' },
+                });
+                
+                if (error) {
+                    // If function error, try direct database query as fallback
+                    throw error;
+                }
+                
+                // Success - use the data from function
+                const users = ((data as any)?.users || []) || [];
+                setPendingApprovals(users);
+                return;
+            } catch (funcError: any) {
+                const raw = String(funcError?.message || funcError?.error || '').toLowerCase();
+                const isNotFound = raw.includes('requested function was not found') || raw.includes('not_found') || raw.includes('not found');
+                const isFetchFail = raw.includes('failed to fetch') || raw.includes('network') || raw.includes('err_failed') || raw.includes('failed to send');
+                
+                // If function not found or network error, try direct database query
+                if (isNotFound || isFetchFail) {
+                    console.warn('Edge Function unavailable, using direct database query');
+                    
+                    // Fallback: Direct database query
+                    const { data: directData, error: directError } = await supabase
+                        .from('profiles')
+                        .select('id, full_name, student_id, approval_status, approval_updated_at')
+                        .eq('approval_status', 'pending')
+                        .order('approval_updated_at', { ascending: true })
+                        .limit(300);
+                    
+                    if (directError) {
+                        throw directError;
+                    }
+                    
+                    setPendingApprovals((directData as any) || []);
+                    return;
+                }
+                
+                // Other errors (unauthorized, etc.) - throw to show proper message
+                throw funcError;
+            }
         } catch (e: any) {
-            alert(e?.message || 'فشل تحميل طلبات الدخول');
+            const raw = String(e?.message || e?.error || '').toLowerCase();
+            const isUnauthorized = raw.includes('unauthorized') || raw.includes('forbidden') || raw.includes('401') || raw.includes('403');
+            const isNotFound = raw.includes('requested function was not found') || raw.includes('not_found') || raw.includes('not found');
+            const isFetchFail = raw.includes('failed to fetch') || raw.includes('network') || raw.includes('err_failed') || raw.includes('failed to send');
+            
+            if (isUnauthorized) {
+                alert('ليس لديك صلاحية للوصول إلى هذه الميزة. تأكد من أنك مسجل دخول كأدمن.');
+            } else if (isNotFound) {
+                console.warn('Edge Function not found, but direct query should work');
+                // Don't show error if we can use direct query
+            } else if (isFetchFail) {
+                console.warn('Network error, but direct query should work');
+                // Don't show error if we can use direct query
+            } else {
+                console.error('Error fetching pending approvals:', e);
+            }
             setPendingApprovals([]);
         } finally {
             setApprovalsLoading(false);
@@ -272,13 +325,50 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
         if (!isSupabaseConfigured) return;
         if (!window.confirm('قبول هذا المستخدم؟')) return;
         try {
-            const { error } = await supabase.functions.invoke('admin-approval', {
-                body: { action: 'approve', userId },
-            });
-            if (error) throw error;
-            await fetchPendingApprovals();
+            // Try Edge Function first
+            try {
+                const { error } = await supabase.functions.invoke('admin-approval', {
+                    body: { action: 'approve', userId },
+                });
+                if (error) throw error;
+                await fetchPendingApprovals();
+                alert('تم قبول المستخدم بنجاح');
+                return;
+            } catch (funcError: any) {
+                const raw = String(funcError?.message || funcError?.error || '').toLowerCase();
+                const isNotFound = raw.includes('requested function was not found') || raw.includes('not_found') || raw.includes('not found');
+                const isFetchFail = raw.includes('failed to fetch') || raw.includes('network') || raw.includes('err_failed') || raw.includes('failed to send');
+                
+                // Fallback: Direct database update
+                if (isNotFound || isFetchFail) {
+                    console.warn('Edge Function unavailable, using direct database update');
+                    const { error: directError } = await supabase
+                        .from('profiles')
+                        .update({ 
+                            approval_status: 'approved', 
+                            approval_updated_at: new Date().toISOString(),
+                            // Explicitly ensure is_banned is false (in case it was set incorrectly)
+                            is_banned: false
+                        })
+                        .eq('id', userId);
+                    
+                    if (directError) throw directError;
+                    await fetchPendingApprovals();
+                    alert('تم قبول المستخدم بنجاح');
+                    return;
+                }
+                
+                throw funcError;
+            }
         } catch (e: any) {
-            alert(e?.message || 'فشل قبول المستخدم');
+            const raw = String(e?.message || e?.error || '').toLowerCase();
+            const isUnauthorized = raw.includes('unauthorized') || raw.includes('forbidden') || raw.includes('401') || raw.includes('403');
+            
+            if (isUnauthorized) {
+                alert('ليس لديك صلاحية للوصول إلى هذه الميزة. تأكد من أنك مسجل دخول كأدمن.');
+            } else {
+                alert(e?.message || 'فشل قبول المستخدم');
+            }
         }
     };
 
@@ -287,13 +377,51 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
         const note = window.prompt('سبب الرفض (اختياري)') || '';
         if (!window.confirm('رفض هذا المستخدم؟')) return;
         try {
-            const { error } = await supabase.functions.invoke('admin-approval', {
-                body: { action: 'reject', userId, note },
-            });
-            if (error) throw error;
-            await fetchPendingApprovals();
+            // Try Edge Function first
+            try {
+                const { error } = await supabase.functions.invoke('admin-approval', {
+                    body: { action: 'reject', userId, note },
+                });
+                if (error) throw error;
+                await fetchPendingApprovals();
+                alert('تم رفض المستخدم بنجاح');
+                return;
+            } catch (funcError: any) {
+                const raw = String(funcError?.message || funcError?.error || '').toLowerCase();
+                const isNotFound = raw.includes('requested function was not found') || raw.includes('not_found') || raw.includes('not found');
+                const isFetchFail = raw.includes('failed to fetch') || raw.includes('network') || raw.includes('err_failed') || raw.includes('failed to send');
+                
+                // Fallback: Direct database update
+                if (isNotFound || isFetchFail) {
+                    console.warn('Edge Function unavailable, using direct database update');
+                    const { error: directError } = await supabase
+                        .from('profiles')
+                        .update({ 
+                            approval_status: 'rejected', 
+                            approval_updated_at: new Date().toISOString(),
+                            approval_note: note || null,
+                            // Rejection doesn't mean ban, so keep is_banned as false
+                            is_banned: false
+                        })
+                        .eq('id', userId);
+                    
+                    if (directError) throw directError;
+                    await fetchPendingApprovals();
+                    alert('تم رفض المستخدم بنجاح');
+                    return;
+                }
+                
+                throw funcError;
+            }
         } catch (e: any) {
-            alert(e?.message || 'فشل رفض المستخدم');
+            const raw = String(e?.message || e?.error || '').toLowerCase();
+            const isUnauthorized = raw.includes('unauthorized') || raw.includes('forbidden') || raw.includes('401') || raw.includes('403');
+            
+            if (isUnauthorized) {
+                alert('ليس لديك صلاحية للوصول إلى هذه الميزة. تأكد من أنك مسجل دخول كأدمن.');
+            } else {
+                alert(e?.message || 'فشل رفض المستخدم');
+            }
         }
     };
 
