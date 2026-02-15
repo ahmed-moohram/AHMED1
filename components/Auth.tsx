@@ -267,7 +267,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
       setSavedPhone(userPhone);
     }
 
-    const approval = String((profile as any)?.approval_status || 'approved');
+    const approval = String((profile as any)?.approval_status || 'pending');
     if (approval === 'pending') {
       setInfo('تم تسجيل الدخول لكن الحساب قيد المراجعة من الأدمن. حاول لاحقًا.');
       await supabase.auth.signOut();

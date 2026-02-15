@@ -156,6 +156,18 @@ function App() {
           setViewState('BANNED');
           return;
         }
+
+        const approval = String((profile as any)?.approval_status || 'pending');
+        if (approval === 'pending' || approval === 'rejected') {
+          await supabase.auth.signOut();
+          setIsAuthenticated(false);
+          setIsAdmin(false);
+          setIsMasterAdmin(false);
+          setUserName('');
+          setBanReason('');
+          setViewState('AUTH');
+          return;
+        }
         
         // Allow access if Role is admin OR if it is the Master ID (Frontend Override)
         // Note: Added 0005209667 to handle the typo case shown in screenshots
