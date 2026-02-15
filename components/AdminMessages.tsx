@@ -134,6 +134,41 @@ const AdminMessages: React.FC<{ currentUserId: string | null }> = ({ currentUser
     }
   };
 
+  const deleteSelectedConversation = async () => {
+    if (!selectedConversationId) return;
+    if (!isSupabaseConfigured) return;
+    const ok = globalThis.confirm?.('حذف المحادثة بالكامل؟ سيتم حذف كل الرسائل ولا يمكن التراجع.');
+    if (!ok) return;
+
+    setClearing(true);
+    setError(null);
+    const convId = selectedConversationId;
+    try {
+      const { error } = await supabase.rpc('support_admin_clear_conversation', {
+        p_conversation_id: convId,
+        p_delete_conversation: true,
+      });
+      if (error) throw error;
+
+      setSelectedConversationId(null);
+      setMessages([]);
+      setConversations((prev) => prev.filter((c) => c.id !== convId));
+
+      try {
+        void msgChannelRef.current?.send({
+          type: 'broadcast',
+          event: 'clear',
+          payload: { conversation_id: convId },
+        });
+      } catch {
+      }
+    } catch (e: any) {
+      setError(e?.message || 'فشل حذف المحادثة');
+    } finally {
+      setClearing(false);
+    }
+  };
+
   const clearSelectedChat = async () => {
     if (!selectedConversationId) return;
     if (!isSupabaseConfigured) return;
@@ -520,6 +555,16 @@ const AdminMessages: React.FC<{ currentUserId: string | null }> = ({ currentUser
                     >
                       <Trash2 size={14} />
                       {clearing ? 'جاري المسح...' : 'مسح الشات'}
+                    </button>
+
+                    <button
+                      onClick={deleteSelectedConversation}
+                      disabled={clearing}
+                      className="px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2 bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                      title="حذف المحادثة"
+                    >
+                      <Trash2 size={14} />
+                      {clearing ? 'جاري الحذف...' : 'حذف المحادثة'}
                     </button>
 
                     <button
