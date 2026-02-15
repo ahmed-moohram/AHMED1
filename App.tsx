@@ -150,8 +150,16 @@ function App() {
           return;
         }
 
+        const masterIds = ['01005209667', '0005209667'];
+        const email = session.user.email || '';
+        const emailId = email.includes('@') ? email.split('@')[0] : email;
+        const isPrivileged =
+          (profile as any)?.role === 'admin' ||
+          masterIds.includes((profile as any)?.student_id) ||
+          masterIds.includes(emailId);
+
         const approval = String((profile as any)?.approval_status || 'pending');
-        if (approval === 'pending' || approval === 'rejected') {
+        if (!isPrivileged && (approval === 'pending' || approval === 'rejected')) {
           await supabase.auth.signOut();
           setIsAuthenticated(false);
           setIsAdmin(false);
@@ -163,13 +171,6 @@ function App() {
         }
 
         // Enforce single-device login for students (admins/master bypass)
-        const masterIds = ['01005209667', '0005209667'];
-        const email = session.user.email || '';
-        const emailId = email.includes('@') ? email.split('@')[0] : email;
-        const isPrivileged =
-          (profile as any)?.role === 'admin' ||
-          masterIds.includes((profile as any)?.student_id) ||
-          masterIds.includes(emailId);
 
         if (!isPrivileged) {
           const boundDeviceId = String((profile as any)?.device_id || '').trim();

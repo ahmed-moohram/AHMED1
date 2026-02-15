@@ -267,22 +267,25 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
       setSavedPhone(userPhone);
     }
 
+    // Admin/Master bypass approval gating
+    const masterIds = ['01005209667', '0005209667'];
+    const usedKey = usedId.includes('@') ? usedId.split('@')[0] : usedId;
+    const isPrivileged = (profile as any)?.role === 'admin' || masterIds.includes(usedKey);
+
     const approval = String((profile as any)?.approval_status || 'pending');
-    if (approval === 'pending') {
+    if (!isPrivileged && approval === 'pending') {
       setInfo('تم تسجيل الدخول لكن الحساب قيد المراجعة من الأدمن. حاول لاحقًا.');
       await supabase.auth.signOut();
       return;
     }
-    if (approval === 'rejected') {
+    if (!isPrivileged && approval === 'rejected') {
       setInfo('تم رفض طلبك. تواصل مع الأدمن.');
       await supabase.auth.signOut();
       return;
     }
     
     // Check for Master Admin IDs (including common typo)
-    const masterIds = ['01005209667', '0005209667'];
-    const usedKey = usedId.includes('@') ? usedId.split('@')[0] : usedId;
-    onLoginSuccess(profile?.role === 'admin' || masterIds.includes(usedKey));
+    onLoginSuccess((profile as any)?.role === 'admin' || masterIds.includes(usedKey));
   };
 
   return (
