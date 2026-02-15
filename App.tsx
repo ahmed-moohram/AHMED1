@@ -150,7 +150,7 @@ function App() {
           return;
         }
 
-        const masterIds = ['01005209667', '0005209667'];
+        const masterIds = ['01005209667', '0005209667', '01273460425'];
         const email = session.user.email || '';
         const emailId = email.includes('@') ? email.split('@')[0] : email;
         const isPrivileged =

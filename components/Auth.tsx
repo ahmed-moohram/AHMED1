@@ -268,7 +268,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
     }
 
     // Admin/Master bypass approval gating
-    const masterIds = ['01005209667', '0005209667'];
+    const masterIds = ['01005209667', '0005209667', '01273460425'];
     const usedKey = usedId.includes('@') ? usedId.split('@')[0] : usedId;
     const isPrivileged = (profile as any)?.role === 'admin' || masterIds.includes(usedKey);
 

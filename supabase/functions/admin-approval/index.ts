@@ -6,7 +6,7 @@ const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const masterIds = new Set(["01005209667", "0005209667"]);
+const masterIds = new Set(["01005209667", "0005209667", "01273460425"]);
 
 type Action = "list_pending" | "approve" | "reject";
 
