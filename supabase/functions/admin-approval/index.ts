@@ -56,7 +56,18 @@ Deno.serve(async (req) => {
     }
 
     const emailLocalPart = callerData.user.email.split("@")[0] || "";
-    if (!masterIds.has(emailLocalPart)) {
+    const { data: callerProfile } = await supabaseUser
+      .from("profiles")
+      .select("role, student_id")
+      .eq("id", callerData.user.id)
+      .maybeSingle();
+
+    const callerRole = String((callerProfile as any)?.role || "");
+    const callerStudentId = String((callerProfile as any)?.student_id || "");
+    const isPrivileged =
+      callerRole === "admin" || masterIds.has(emailLocalPart) || masterIds.has(callerStudentId);
+
+    if (!isPrivileged) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

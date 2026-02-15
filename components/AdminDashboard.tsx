@@ -255,14 +255,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
         }
         setApprovalsLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('id, full_name, student_id, approval_status, approval_updated_at, approval_note')
-                .eq('approval_status', 'pending')
-                .order('approval_updated_at', { ascending: true })
-                .limit(300);
+            const { data, error } = await supabase.functions.invoke('admin-approval', {
+                body: { action: 'list_pending' },
+            });
             if (error) throw error;
-            setPendingApprovals((data || []) as any);
+            setPendingApprovals((((data as any)?.users || []) as any) || []);
         } catch (e: any) {
             alert(e?.message || 'فشل تحميل طلبات الدخول');
             setPendingApprovals([]);
@@ -275,10 +272,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
         if (!isSupabaseConfigured) return;
         if (!window.confirm('قبول هذا المستخدم؟')) return;
         try {
-            const { error } = await supabase
-                .from('profiles')
-                .update({ approval_status: 'approved', approval_updated_at: new Date().toISOString(), approval_note: null })
-                .eq('id', userId);
+            const { error } = await supabase.functions.invoke('admin-approval', {
+                body: { action: 'approve', userId },
+            });
             if (error) throw error;
             await fetchPendingApprovals();
         } catch (e: any) {
@@ -291,10 +287,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
         const note = window.prompt('سبب الرفض (اختياري)') || '';
         if (!window.confirm('رفض هذا المستخدم؟')) return;
         try {
-            const { error } = await supabase
-                .from('profiles')
-                .update({ approval_status: 'rejected', approval_updated_at: new Date().toISOString(), approval_note: note || null })
-                .eq('id', userId);
+            const { error } = await supabase.functions.invoke('admin-approval', {
+                body: { action: 'reject', userId, note },
+            });
             if (error) throw error;
             await fetchPendingApprovals();
         } catch (e: any) {
