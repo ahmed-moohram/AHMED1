@@ -133,13 +133,6 @@ function App() {
       if (session && !error) {
         setIsAuthenticated(true);
 
-        // Best-effort: store device_id on the profile so admin can ban a device later
-        try {
-          await supabase.rpc('set_device_id', { p_device_id: deviceId });
-        } catch {
-          // Ignore (RLS may block)
-        }
-
         // Get Role and ID to force admin check
         const { data: profile } = await supabase
           .from('profiles')
@@ -168,12 +161,39 @@ function App() {
           setViewState('AUTH');
           return;
         }
-        
-        // Allow access if Role is admin OR if it is the Master ID (Frontend Override)
-        // Note: Added 0005209667 to handle the typo case shown in screenshots
+
+        // Enforce single-device login for students (admins/master bypass)
         const masterIds = ['01005209667', '0005209667'];
         const email = session.user.email || '';
         const emailId = email.includes('@') ? email.split('@')[0] : email;
+        const isPrivileged =
+          (profile as any)?.role === 'admin' ||
+          masterIds.includes((profile as any)?.student_id) ||
+          masterIds.includes(emailId);
+
+        if (!isPrivileged) {
+          const boundDeviceId = String((profile as any)?.device_id || '').trim();
+          if (boundDeviceId && boundDeviceId !== deviceId) {
+            await supabase.auth.signOut();
+            setIsAuthenticated(false);
+            setIsAdmin(false);
+            setIsMasterAdmin(false);
+            setUserName('');
+            setBanReason('الحساب مسجل على جهاز آخر. تواصل مع الأدمن لفك الربط.');
+            setViewState('BANNED');
+            return;
+          }
+          if (!boundDeviceId && deviceId && deviceId !== 'unknown-device') {
+            try {
+              await supabase.rpc('set_device_id', { p_device_id: deviceId });
+            } catch {
+              // Ignore (RLS may block)
+            }
+          }
+        }
+        
+        // Allow access if Role is admin OR if it is the Master ID (Frontend Override)
+        // Note: Added 0005209667 to handle the typo case shown in screenshots
         setIsMasterAdmin(masterIds.includes(emailId));
         setIsAdmin(
           (profile as any)?.role === 'admin' ||
