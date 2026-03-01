@@ -121,7 +121,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
            onLoginSuccess(true);
         } else {
            if (!isLogin) {
-             setInfo('تم إرسال طلبك، الأدمن هيراجع الطلب وبعدها تقدر تدخل');
+             setInfo('✅ تم إنشاء حسابك بنجاح! سجّل دخولك الآن.');
              setIsLogin(true);
              return;
            }
@@ -242,7 +242,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
                 student_id: cleanId,
                 phone: cleanPhone,
                 role: isAdmin ? 'admin' : 'student',
-                approval_status: isAdmin ? 'approved' : 'pending',
+                approval_status: 'approved',
                 approval_updated_at: new Date().toISOString(),
               }, {
                 onConflict: 'id'
@@ -261,7 +261,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
           localStorage.setItem('lastPhoneNumber', cleanPhone);
           setSavedPhone(cleanPhone);
         }
-        setInfo('تم إنشاء الحساب. الأدمن هيراجع الطلب وبعدها تقدر تسجل دخول.');
+        setInfo('✅ تم إنشاء حسابك بنجاح! سجّل دخولك الآن.');
         setIsLogin(true);
       }
     } catch (err: any) {

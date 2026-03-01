@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, BookOpen, Plus, Trash2, Edit3, X, Save, Video, LogOut, Copy, KeyRound, MessagesSquare } from 'lucide-react';
+import { Users, BookOpen, Plus, Trash2, Edit3, X, Save, LogOut, Copy, KeyRound, MessagesSquare } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Course, Lesson, UserProfile } from '../types';
 import { COURSES as MOCK_COURSES } from '../constants';
@@ -33,18 +33,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
     const [copiedUserId, setCopiedUserId] = useState<string | null>(null);
     const [passwordByUserId, setPasswordByUserId] = useState<Record<string, string>>({});
     const [settingPasswordUserId, setSettingPasswordUserId] = useState<string | null>(null);
-    
+
     // Modal States
     const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
     const [editingCourse, setEditingCourse] = useState<Partial<Course> | null>(null);
     const [selectedCourseIdForLessons, setSelectedCourseIdForLessons] = useState<string | null>(null);
-    
+
     // Lesson Modal
     const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
     const [editingLesson, setEditingLesson] = useState<Partial<Lesson> | null>(null);
 
     const [uploadingCourseThumbnail, setUploadingCourseThumbnail] = useState(false);
-    const [uploadingLessonVideo, setUploadingLessonVideo] = useState(false);
 
     const formatStudentPassword = (sid: string) => {
         const clean = String(sid || '').trim();
@@ -129,18 +128,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
         }
     };
 
-    const handleUploadLessonVideo = async (file: File) => {
-        if (!file) return;
-        setUploadingLessonVideo(true);
-        try {
-            const url = await uploadToStorage({ bucket: 'lesson-videos', folder: 'videos', file });
-            setEditingLesson((prev) => ({ ...(prev || {}), videoUrl: url }));
-        } catch (e: any) {
-            alert(e?.message || 'فشل رفع الفيديو');
-        } finally {
-            setUploadingLessonVideo(false);
-        }
-    };
+
 
     const fetchStudents = async ({ page, reset, search }: { page: number; reset: boolean; search: string }) => {
         const seq = ++studentsFetchSeq.current;
@@ -260,12 +248,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                 const { data, error } = await supabase.functions.invoke('admin-approval', {
                     body: { action: 'list_pending' },
                 });
-                
+
                 if (error) {
                     // If function error, try direct database query as fallback
                     throw error;
                 }
-                
+
                 // Success - use the data from function
                 const users = ((data as any)?.users || []) || [];
                 setPendingApprovals(users);
@@ -274,11 +262,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                 const raw = String(funcError?.message || funcError?.error || '').toLowerCase();
                 const isNotFound = raw.includes('requested function was not found') || raw.includes('not_found') || raw.includes('not found');
                 const isFetchFail = raw.includes('failed to fetch') || raw.includes('network') || raw.includes('err_failed') || raw.includes('failed to send');
-                
+
                 // If function not found or network error, try direct database query
                 if (isNotFound || isFetchFail) {
                     console.warn('Edge Function unavailable, using direct database query');
-                    
+
                     // Fallback: Direct database query
                     const { data: directData, error: directError } = await supabase
                         .from('profiles')
@@ -286,15 +274,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                         .eq('approval_status', 'pending')
                         .order('approval_updated_at', { ascending: true })
                         .limit(300);
-                    
+
                     if (directError) {
                         throw directError;
                     }
-                    
+
                     setPendingApprovals((directData as any) || []);
                     return;
                 }
-                
+
                 // Other errors (unauthorized, etc.) - throw to show proper message
                 throw funcError;
             }
@@ -303,7 +291,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
             const isUnauthorized = raw.includes('unauthorized') || raw.includes('forbidden') || raw.includes('401') || raw.includes('403');
             const isNotFound = raw.includes('requested function was not found') || raw.includes('not_found') || raw.includes('not found');
             const isFetchFail = raw.includes('failed to fetch') || raw.includes('network') || raw.includes('err_failed') || raw.includes('failed to send');
-            
+
             if (isUnauthorized) {
                 alert('ليس لديك صلاحية للوصول إلى هذه الميزة. تأكد من أنك مسجل دخول كأدمن.');
             } else if (isNotFound) {
@@ -338,32 +326,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                 const raw = String(funcError?.message || funcError?.error || '').toLowerCase();
                 const isNotFound = raw.includes('requested function was not found') || raw.includes('not_found') || raw.includes('not found');
                 const isFetchFail = raw.includes('failed to fetch') || raw.includes('network') || raw.includes('err_failed') || raw.includes('failed to send');
-                
+
                 // Fallback: Direct database update
                 if (isNotFound || isFetchFail) {
                     console.warn('Edge Function unavailable, using direct database update');
                     const { error: directError } = await supabase
                         .from('profiles')
-                        .update({ 
-                            approval_status: 'approved', 
+                        .update({
+                            approval_status: 'approved',
                             approval_updated_at: new Date().toISOString(),
                             // Explicitly ensure is_banned is false (in case it was set incorrectly)
                             is_banned: false
                         })
                         .eq('id', userId);
-                    
+
                     if (directError) throw directError;
                     await fetchPendingApprovals();
                     alert('تم قبول المستخدم بنجاح');
                     return;
                 }
-                
+
                 throw funcError;
             }
         } catch (e: any) {
             const raw = String(e?.message || e?.error || '').toLowerCase();
             const isUnauthorized = raw.includes('unauthorized') || raw.includes('forbidden') || raw.includes('401') || raw.includes('403');
-            
+
             if (isUnauthorized) {
                 alert('ليس لديك صلاحية للوصول إلى هذه الميزة. تأكد من أنك مسجل دخول كأدمن.');
             } else {
@@ -390,33 +378,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                 const raw = String(funcError?.message || funcError?.error || '').toLowerCase();
                 const isNotFound = raw.includes('requested function was not found') || raw.includes('not_found') || raw.includes('not found');
                 const isFetchFail = raw.includes('failed to fetch') || raw.includes('network') || raw.includes('err_failed') || raw.includes('failed to send');
-                
+
                 // Fallback: Direct database update
                 if (isNotFound || isFetchFail) {
                     console.warn('Edge Function unavailable, using direct database update');
                     const { error: directError } = await supabase
                         .from('profiles')
-                        .update({ 
-                            approval_status: 'rejected', 
+                        .update({
+                            approval_status: 'rejected',
                             approval_updated_at: new Date().toISOString(),
                             approval_note: note || null,
                             // Rejection doesn't mean ban, so keep is_banned as false
                             is_banned: false
                         })
                         .eq('id', userId);
-                    
+
                     if (directError) throw directError;
                     await fetchPendingApprovals();
                     alert('تم رفض المستخدم بنجاح');
                     return;
                 }
-                
+
                 throw funcError;
             }
         } catch (e: any) {
             const raw = String(e?.message || e?.error || '').toLowerCase();
             const isUnauthorized = raw.includes('unauthorized') || raw.includes('forbidden') || raw.includes('401') || raw.includes('403');
-            
+
             if (isUnauthorized) {
                 alert('ليس لديك صلاحية للوصول إلى هذه الميزة. تأكد من أنك مسجل دخول كأدمن.');
             } else {
@@ -457,7 +445,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
             .from('courses')
             .select(`*, lessons (*)`)
             .order('created_at', { ascending: false });
-        
+
         if (data) {
             const mappedCourses = data.map((c: any) => ({
                 ...c,
@@ -549,31 +537,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
         }
     };
 
-     const handleResetStudentPassword = async (userId: string, studentId?: string | null) => {
-         if (!isSupabaseConfigured) return;
-         if (!window.confirm('سيتم تعيين كلمة سر جديدة لهذا الطالب. هل تريد المتابعة؟')) return;
-         const defaultPassword = studentId ? formatStudentPassword(studentId) : '';
-         const input = window.prompt('اكتب كلمة السر الجديدة (6 أحرف على الأقل)', defaultPassword) ?? '';
-         const passwordCandidate = String(input || '').trim();
-         if (!passwordCandidate) return;
-         if (passwordCandidate.length < 6) {
-             alert('كلمة المرور ضعيفة (يجب أن تكون 6 أحرف على الأقل)');
-             return;
-         }
+    const handleResetStudentPassword = async (userId: string, studentId?: string | null) => {
+        if (!isSupabaseConfigured) return;
+        if (!window.confirm('سيتم تعيين كلمة سر جديدة لهذا الطالب. هل تريد المتابعة؟')) return;
+        const defaultPassword = studentId ? formatStudentPassword(studentId) : '';
+        const input = window.prompt('اكتب كلمة السر الجديدة (6 أحرف على الأقل)', defaultPassword) ?? '';
+        const passwordCandidate = String(input || '').trim();
+        if (!passwordCandidate) return;
+        if (passwordCandidate.length < 6) {
+            alert('كلمة المرور ضعيفة (يجب أن تكون 6 أحرف على الأقل)');
+            return;
+        }
 
-         setPasswordByUserId((prev) => ({ ...prev, [userId]: passwordCandidate }));
-         await copyText(passwordCandidate, userId);
-         setSettingPasswordUserId(userId);
-         try {
-             const { data, error } = await supabase.functions.invoke('admin-set-password', {
-                 body: { userId, password: passwordCandidate || undefined }
-             });
-             if (error) throw error;
-             const newPassword = String((data as any)?.password || passwordCandidate || '').trim();
-             if (!newPassword) throw new Error('لم يتم استلام كلمة السر من السيرفر');
-             setPasswordByUserId((prev) => ({ ...prev, [userId]: newPassword }));
-             await copyText(newPassword, userId);
-         } catch (e: any) {
+        setPasswordByUserId((prev) => ({ ...prev, [userId]: passwordCandidate }));
+        await copyText(passwordCandidate, userId);
+        setSettingPasswordUserId(userId);
+        try {
+            const { data, error } = await supabase.functions.invoke('admin-set-password', {
+                body: { userId, password: passwordCandidate || undefined }
+            });
+            if (error) throw error;
+            const newPassword = String((data as any)?.password || passwordCandidate || '').trim();
+            if (!newPassword) throw new Error('لم يتم استلام كلمة السر من السيرفر');
+            setPasswordByUserId((prev) => ({ ...prev, [userId]: newPassword }));
+            await copyText(newPassword, userId);
+        } catch (e: any) {
             setPasswordByUserId((prev) => {
                 const next = { ...prev };
                 delete next[userId];
@@ -589,21 +577,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
             } else {
                 alert(e?.message || 'فشل تعيين كلمة السر');
             }
-         } finally {
+        } finally {
             setSettingPasswordUserId((prev) => (prev === userId ? null : prev));
-         }
-     };
+        }
+    };
 
     // Course Handlers
     const handleSaveCourse = async () => {
         if (!editingCourse) return;
-        
+
         if (!isSupabaseConfigured) {
             alert('لا يمكن الحفظ في الوضع التجريبي');
             setIsCourseModalOpen(false);
             return;
         }
-        
+
         const courseData = {
             title: editingCourse.title,
             description: editingCourse.description,
@@ -619,7 +607,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
         } else {
             await supabase.from('courses').insert([courseData]);
         }
-        
+
         setIsCourseModalOpen(false);
         setEditingCourse(null);
         fetchCourses();
@@ -627,10 +615,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
 
     const handleDeleteCourse = async (id: string) => {
         if (!isSupabaseConfigured) {
-             alert('لا يمكن الحذف في الوضع التجريبي');
-             return;
+            alert('لا يمكن الحذف في الوضع التجريبي');
+            return;
         }
-        if(confirm('هل أنت متأكد من حذف هذا الكورس؟')) {
+        if (confirm('هل أنت متأكد من حذف هذا الكورس؟')) {
             await supabase.from('courses').delete().eq('id', id);
             fetchCourses();
         }
@@ -641,9 +629,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
         if (!editingLesson || !selectedCourseIdForLessons) return;
 
         if (!isSupabaseConfigured) {
-             alert('لا يمكن الحفظ في الوضع التجريبي');
-             setIsLessonModalOpen(false);
-             return;
+            alert('لا يمكن الحفظ في الوضع التجريبي');
+            setIsLessonModalOpen(false);
+            return;
         }
 
         const lessonData = {
@@ -651,7 +639,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
             title: editingLesson.title,
             description: editingLesson.description,
             duration: editingLesson.duration,
-            video_url: editingLesson.videoUrl, // Map back to DB column
+            video_url: null, // Video removed - content is audio + PDF only
             pdf_urls: editingLesson.pdfUrls || [],
             audio_urls: editingLesson.audioUrls || [],
             is_locked: editingLesson.isLocked ?? editingLesson.is_locked ?? false
@@ -659,31 +647,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
 
         if (editingLesson.id) {
             // Update
-             await supabase.from('lessons').update({
+            await supabase.from('lessons').update({
                 title: lessonData.title,
                 description: lessonData.description,
                 duration: lessonData.duration,
-                video_url: lessonData.video_url,
+                video_url: null,
                 pdf_urls: lessonData.pdf_urls,
                 audio_urls: lessonData.audio_urls,
                 is_locked: lessonData.is_locked
-             }).eq('id', editingLesson.id);
+            }).eq('id', editingLesson.id);
         } else {
             // Insert
             await supabase.from('lessons').insert([lessonData]);
         }
-        
+
         setIsLessonModalOpen(false);
         setEditingLesson(null);
         fetchCourses(); // Refresh to show new lessons
     };
-    
+
     const handleDeleteLesson = async (id: string) => {
         if (!isSupabaseConfigured) {
-             alert('لا يمكن الحذف في الوضع التجريبي');
-             return;
+            alert('لا يمكن الحذف في الوضع التجريبي');
+            return;
         }
-         if(confirm('حذف المحاضرة؟')) {
+        if (confirm('حذف المحاضرة؟')) {
             await supabase.from('lessons').delete().eq('id', id);
             fetchCourses();
         }
@@ -705,28 +693,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
 
                 {/* Tabs */}
                 <div className="flex gap-3 mb-6">
-                    <button 
+                    <button
                         onClick={() => setActiveTab('courses')}
                         className={`flex-1 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base transition-all ${activeTab === 'courses' ? 'bg-dark text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
                     >
                         <BookOpen size={18} className="inline-block ml-2 mb-1" />
                         المواد الدراسية
                     </button>
-                    <button 
+                    <button
                         onClick={() => setActiveTab('students')}
                         className={`flex-1 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base transition-all ${activeTab === 'students' ? 'bg-dark text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
                     >
                         <Users size={18} className="inline-block ml-2 mb-1" />
                         الطلاب المسجلين
                     </button>
-                    <button 
+                    <button
                         onClick={() => setActiveTab('approvals')}
                         className={`flex-1 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base transition-all ${activeTab === 'approvals' ? 'bg-dark text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
                     >
                         <Users size={18} className="inline-block ml-2 mb-1" />
                         طلبات الدخول
                     </button>
-                    <button 
+                    <button
                         onClick={() => setActiveTab('messages')}
                         className={`flex-1 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base transition-all ${activeTab === 'messages' ? 'bg-dark text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
                     >
@@ -740,7 +728,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                     <AdminMessages currentUserId={currentUserId} />
                 ) : activeTab === 'courses' ? (
                     <div className="space-y-6">
-                        <button 
+                        <button
                             onClick={() => { setEditingCourse({}); setIsCourseModalOpen(true); }}
                             className="w-full py-3 sm:py-4 border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center gap-2 text-gray-400 font-bold text-sm sm:text-base hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
                         >
@@ -759,7 +747,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                     </div>
                                     <h3 className="font-bold text-lg text-dark mb-2">{course.title}</h3>
                                     <div className="text-xs text-gray-400 mb-4">{course.lessons?.length || 0} محاضرات</div>
-                                    
+
                                     <div className="border-t border-gray-100 pt-4">
                                         <h4 className="font-bold text-sm mb-2 text-primary">المحاضرات:</h4>
                                         <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -772,7 +760,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                                     </div>
                                                 </div>
                                             ))}
-                                            <button 
+                                            <button
                                                 onClick={() => { setSelectedCourseIdForLessons(course.id); setEditingLesson({ title: '', videoUrl: '', pdfUrls: [], audioUrls: [], isLocked: false }); setIsLessonModalOpen(true); }}
                                                 className="w-full text-xs py-2 text-gray-400 hover:text-dark hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center gap-1"
                                             >
@@ -794,11 +782,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                             <button
                                 disabled={approvalsLoading}
                                 onClick={fetchPendingApprovals}
-                                className={`px-4 py-2.5 rounded-xl border font-bold text-sm ${
-                                    approvalsLoading
+                                className={`px-4 py-2.5 rounded-xl border font-bold text-sm ${approvalsLoading
                                         ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'
                                         : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                                }`}
+                                    }`}
                             >
                                 {approvalsLoading ? 'جاري التحميل...' : 'تحديث'}
                             </button>
@@ -888,113 +875,112 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                         </div>
 
                         <div className="w-full overflow-x-auto">
-                        <table className="w-full min-w-[820px]">
-                            <thead className="bg-gray-50 border-b border-gray-100">
-                                <tr>
-                                    <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">اسم الطالب</th>
-                                    <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">الرقم التعريفي (ID)</th>
-                                    {showAllUsers && (
-                                        <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">النوع</th>
-                                    )}
-                                    {showAllUsers && (
-                                        <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">كلمة السر</th>
-                                    )}
-                                    <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">الحالة</th>
-                                    <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">إجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {students.map((student) => (
-                                    <tr key={student.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
-                                        <td className="p-3 sm:p-4 font-bold text-dark text-sm whitespace-nowrap">{student.full_name}</td>
-                                        <td className="p-3 sm:p-4"><span className="inline-flex font-mono text-primary bg-primary/5 px-3 py-1.5 rounded-lg whitespace-nowrap">{student.student_id}</span></td>
+                            <table className="w-full min-w-[820px]">
+                                <thead className="bg-gray-50 border-b border-gray-100">
+                                    <tr>
+                                        <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">اسم الطالب</th>
+                                        <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">الرقم التعريفي (ID)</th>
                                         {showAllUsers && (
-                                            <td className="p-3 sm:p-4">
-                                                <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold">{(student as any).role}</span>
-                                            </td>
+                                            <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">النوع</th>
                                         )}
                                         {showAllUsers && (
-                                            <td className="p-3 sm:p-4">
-                                                {(student as any).role === 'student' && student.student_id ? (
-                                                    passwordByUserId[student.id] ? (
-                                                        <div className="flex items-center gap-2 whitespace-nowrap">
-                                                            <span className="inline-flex font-mono text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg whitespace-nowrap text-xs">
-                                                                {passwordByUserId[student.id]}
-                                                            </span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => copyText(passwordByUserId[student.id], student.id)}
-                                                                className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 bg-white hover:bg-gray-50"
-                                                                title="نسخ كلمة السر"
-                                                            >
-                                                                <Copy size={14} />
-                                                            </button>
-                                                            {copiedUserId === student.id && (
-                                                                <span className="text-xs font-bold text-green-600">تم النسخ</span>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-xs font-bold text-gray-400">—</span>
-                                                    )
-                                                ) : (
-                                                    <span className="text-xs text-gray-400">—</span>
-                                                )}
-                                            </td>
+                                            <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">كلمة السر</th>
                                         )}
-                                        <td className="p-3 sm:p-4">
-                                            {(student as any).is_banned ? (
-                                                <span className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs font-bold">محظور</span>
-                                            ) : (
-                                                <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs font-bold">نشط</span>
-                                            )}
-                                        </td>
-                                        <td className="p-3 sm:p-4">
-                                            <div className="flex gap-2 flex-wrap">
-                                                {showAllUsers && (student as any).role === 'student' && Boolean(student.student_id) && (
-                                                    <button
-                                                        disabled={student.id === currentUserId || settingPasswordUserId === student.id}
-                                                        onClick={() => handleResetStudentPassword(student.id, String(student.student_id || ''))}
-                                                        className={`px-3 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1 ${student.id === currentUserId || settingPasswordUserId === student.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                        title="إعادة تعيين كلمة السر"
-                                                    >
-                                                        <KeyRound size={14} />
-                                                        {settingPasswordUserId === student.id ? 'جاري التعيين...' : 'إعادة تعيين كلمة السر'}
-                                                    </button>
-                                                )}
-                                                <button
-                                                    disabled={student.id === currentUserId}
-                                                    onClick={() => ((student as any).is_banned ? handleUnbanAccount(student.id) : handleBanAccount(student.id))}
-                                                    className={`px-3 py-2 rounded-xl text-xs font-bold ${
-                                                        (student as any).is_banned
-                                                            ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                            : 'bg-red-500 text-white hover:bg-red-600'
-                                                    } ${student.id === currentUserId ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                >
-                                                    {(student as any).is_banned ? 'إلغاء حظر الحساب' : 'حظر الحساب'}
-                                                </button>
-                                                <button
-                                                    disabled={student.id === currentUserId}
-                                                    onClick={() => handleBanDevice((student as any).device_id)}
-                                                    className={`px-3 py-2 rounded-xl text-xs font-bold bg-dark text-white hover:bg-black ${student.id === currentUserId ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                >
-                                                    حظر الجهاز
-                                                </button>
-                                                <button
-                                                    disabled={student.id === currentUserId}
-                                                    onClick={() => handleUnbanDevice((student as any).device_id)}
-                                                    className={`px-3 py-2 rounded-xl text-xs font-bold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 ${student.id === currentUserId ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                >
-                                                    إلغاء حظر الجهاز
-                                                </button>
-                                            </div>
-                                            {(student as any).ban_reason && (student as any).is_banned && (
-                                                <div className="text-xs text-gray-400 font-bold mt-2">السبب: {(student as any).ban_reason}</div>
-                                            )}
-                                        </td>
+                                        <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">الحالة</th>
+                                        <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm whitespace-nowrap">إجراءات</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {students.map((student) => (
+                                        <tr key={student.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                                            <td className="p-3 sm:p-4 font-bold text-dark text-sm whitespace-nowrap">{student.full_name}</td>
+                                            <td className="p-3 sm:p-4"><span className="inline-flex font-mono text-primary bg-primary/5 px-3 py-1.5 rounded-lg whitespace-nowrap">{student.student_id}</span></td>
+                                            {showAllUsers && (
+                                                <td className="p-3 sm:p-4">
+                                                    <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold">{(student as any).role}</span>
+                                                </td>
+                                            )}
+                                            {showAllUsers && (
+                                                <td className="p-3 sm:p-4">
+                                                    {(student as any).role === 'student' && student.student_id ? (
+                                                        passwordByUserId[student.id] ? (
+                                                            <div className="flex items-center gap-2 whitespace-nowrap">
+                                                                <span className="inline-flex font-mono text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg whitespace-nowrap text-xs">
+                                                                    {passwordByUserId[student.id]}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => copyText(passwordByUserId[student.id], student.id)}
+                                                                    className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 bg-white hover:bg-gray-50"
+                                                                    title="نسخ كلمة السر"
+                                                                >
+                                                                    <Copy size={14} />
+                                                                </button>
+                                                                {copiedUserId === student.id && (
+                                                                    <span className="text-xs font-bold text-green-600">تم النسخ</span>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-xs font-bold text-gray-400">—</span>
+                                                        )
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400">—</span>
+                                                    )}
+                                                </td>
+                                            )}
+                                            <td className="p-3 sm:p-4">
+                                                {(student as any).is_banned ? (
+                                                    <span className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs font-bold">محظور</span>
+                                                ) : (
+                                                    <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs font-bold">نشط</span>
+                                                )}
+                                            </td>
+                                            <td className="p-3 sm:p-4">
+                                                <div className="flex gap-2 flex-wrap">
+                                                    {showAllUsers && (student as any).role === 'student' && Boolean(student.student_id) && (
+                                                        <button
+                                                            disabled={student.id === currentUserId || settingPasswordUserId === student.id}
+                                                            onClick={() => handleResetStudentPassword(student.id, String(student.student_id || ''))}
+                                                            className={`px-3 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1 ${student.id === currentUserId || settingPasswordUserId === student.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                            title="إعادة تعيين كلمة السر"
+                                                        >
+                                                            <KeyRound size={14} />
+                                                            {settingPasswordUserId === student.id ? 'جاري التعيين...' : 'إعادة تعيين كلمة السر'}
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        disabled={student.id === currentUserId}
+                                                        onClick={() => ((student as any).is_banned ? handleUnbanAccount(student.id) : handleBanAccount(student.id))}
+                                                        className={`px-3 py-2 rounded-xl text-xs font-bold ${(student as any).is_banned
+                                                                ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                                : 'bg-red-500 text-white hover:bg-red-600'
+                                                            } ${student.id === currentUserId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    >
+                                                        {(student as any).is_banned ? 'إلغاء حظر الحساب' : 'حظر الحساب'}
+                                                    </button>
+                                                    <button
+                                                        disabled={student.id === currentUserId}
+                                                        onClick={() => handleBanDevice((student as any).device_id)}
+                                                        className={`px-3 py-2 rounded-xl text-xs font-bold bg-dark text-white hover:bg-black ${student.id === currentUserId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    >
+                                                        حظر الجهاز
+                                                    </button>
+                                                    <button
+                                                        disabled={student.id === currentUserId}
+                                                        onClick={() => handleUnbanDevice((student as any).device_id)}
+                                                        className={`px-3 py-2 rounded-xl text-xs font-bold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 ${student.id === currentUserId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    >
+                                                        إلغاء حظر الجهاز
+                                                    </button>
+                                                </div>
+                                                {(student as any).ban_reason && (student as any).is_banned && (
+                                                    <div className="text-xs text-gray-400 font-bold mt-2">السبب: {(student as any).ban_reason}</div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
 
                         <div className="p-4 border-t border-gray-100 bg-white">
@@ -1021,9 +1007,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                         <div className="bg-white rounded-t-[2rem] sm:rounded-[2rem] p-5 sm:p-8 w-full sm:max-w-lg shadow-2xl overflow-y-auto max-h-[90vh] mt-auto sm:mt-0">
                             <h2 className="text-xl sm:text-2xl font-bold mb-5 sm:mb-6">{editingCourse?.id ? 'تعديل الكورس' : 'كورس جديد'}</h2>
                             <div className="space-y-4">
-                                <input placeholder="عنوان الكورس" value={editingCourse?.title || ''} onChange={e => setEditingCourse({...editingCourse, title: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" />
-                                <textarea placeholder="الوصف" value={editingCourse?.description || ''} onChange={e => setEditingCourse({...editingCourse, description: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" rows={3} />
-                                <input placeholder="رابط الصورة المصغرة (Thumbnail)" value={editingCourse?.thumbnail || ''} onChange={e => setEditingCourse({...editingCourse, thumbnail: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-left" dir="ltr" />
+                                <input placeholder="عنوان الكورس" value={editingCourse?.title || ''} onChange={e => setEditingCourse({ ...editingCourse, title: e.target.value })} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" />
+                                <textarea placeholder="الوصف" value={editingCourse?.description || ''} onChange={e => setEditingCourse({ ...editingCourse, description: e.target.value })} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" rows={3} />
+                                <input placeholder="رابط الصورة المصغرة (Thumbnail)" value={editingCourse?.thumbnail || ''} onChange={e => setEditingCourse({ ...editingCourse, thumbnail: e.target.value })} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-left" dir="ltr" />
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                     <label className="flex-1">
                                         <div className="text-xs font-bold text-gray-500 mb-2">أو ارفع صورة من الملفات</div>
@@ -1049,14 +1035,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                     <div className="text-xs font-bold text-gray-500">جاري رفع الصورة...</div>
                                 )}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <input placeholder="اسم المدرب" value={editingCourse?.instructor || ''} onChange={e => setEditingCourse({...editingCourse, instructor: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" />
-                                    <select value={editingCourse?.level || 'Beginner'} onChange={e => setEditingCourse({...editingCourse, level: e.target.value as any})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200">
+                                    <input placeholder="اسم المدرب" value={editingCourse?.instructor || ''} onChange={e => setEditingCourse({ ...editingCourse, instructor: e.target.value })} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" />
+                                    <select value={editingCourse?.level || 'Beginner'} onChange={e => setEditingCourse({ ...editingCourse, level: e.target.value as any })} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200">
                                         <option value="Beginner">مبتدأ</option>
                                         <option value="Intermediate">متوسط</option>
                                         <option value="Advanced">متقدم</option>
                                     </select>
                                 </div>
-                                <input placeholder="التاجات (مفصولة بفاصلة)" value={editingCourse?.tags?.toString() || ''} onChange={e => setEditingCourse({...editingCourse, tags: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" />
+                                <input placeholder="التاجات (مفصولة بفاصلة)" value={editingCourse?.tags?.toString() || ''} onChange={e => setEditingCourse({ ...editingCourse, tags: e.target.value })} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" />
                             </div>
                             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 sm:mt-8">
                                 <button onClick={handleSaveCourse} className="flex-1 bg-dark text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-black"><Save size={18} /> حفظ</button>
@@ -1066,35 +1052,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                     </div>
                 )}
 
-                 {/* --- Lesson Modal --- */}
-                 {isLessonModalOpen && (
+                {/* --- Lesson Modal --- */}
+                {isLessonModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4">
                         <div className="bg-white rounded-t-[2rem] sm:rounded-[2rem] p-5 sm:p-8 w-full sm:max-w-lg shadow-2xl overflow-y-auto max-h-[90vh] mt-auto sm:mt-0">
                             <h2 className="text-xl sm:text-2xl font-bold mb-5 sm:mb-6">{editingLesson?.id ? 'تعديل المحاضرة' : 'محاضرة جديدة'}</h2>
                             <div className="space-y-4">
-                                <input placeholder="عنوان المحاضرة" value={editingLesson?.title || ''} onChange={e => setEditingLesson({...editingLesson, title: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" />
-                                <input placeholder="المدة (مثال: 10:00)" value={editingLesson?.duration || ''} onChange={e => setEditingLesson({...editingLesson, duration: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" />
-                                <div className="relative">
-                                     <Video size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                 <input placeholder="رابط الفيديو (YouTube)" value={editingLesson?.videoUrl || ''} onChange={e => setEditingLesson({...editingLesson, videoUrl: e.target.value})} className="w-full p-3 pl-10 bg-gray-50 rounded-xl border border-gray-200 text-left" dir="ltr" />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-gray-500 mb-2">أو ارفع فيديو من الملفات</div>
-                                    <input
-                                        type="file"
-                                        accept="video/*"
-                                        disabled={uploadingLessonVideo}
-                                        onChange={(e) => {
-                                            const f = e.target.files?.[0];
-                                            if (f) handleUploadLessonVideo(f);
-                                            e.currentTarget.value = '';
-                                        }}
-                                        className="w-full text-sm"
-                                    />
-                                    {uploadingLessonVideo && (
-                                        <div className="text-xs font-bold text-gray-500 mt-2">جاري رفع الفيديو...</div>
-                                    )}
-                                </div>
+                                <input placeholder="عنوان المحاضرة" value={editingLesson?.title || ''} onChange={e => setEditingLesson({ ...editingLesson, title: e.target.value })} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" />
+                                <input placeholder="المدة (مثال: 10:00)" value={editingLesson?.duration || ''} onChange={e => setEditingLesson({ ...editingLesson, duration: e.target.value })} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" />
                                 <label className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
                                     <span className="font-bold text-sm text-gray-600">قفل المحاضرة</span>
                                     <input
@@ -1103,8 +1068,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                         onChange={(e) => setEditingLesson({ ...editingLesson, isLocked: e.target.checked })}
                                     />
                                 </label>
-                                <textarea placeholder="وصف المحاضرة" value={editingLesson?.description || ''} onChange={e => setEditingLesson({...editingLesson, description: e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" rows={2} />
-                                
+                                <textarea placeholder="وصف المحاضرة" value={editingLesson?.description || ''} onChange={e => setEditingLesson({ ...editingLesson, description: e.target.value })} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200" rows={2} />
+
                                 {/* Quick PDF Adder */}
                                 <div className="p-4 bg-red-50 rounded-xl border border-red-100">
                                     <h4 className="font-bold text-red-500 text-sm mb-2">ملفات PDF (Google Drive URL)</h4>
@@ -1114,16 +1079,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                                 <input value={pdf.title} onChange={e => {
                                                     const newPdfs = [...(editingLesson?.pdfUrls || [])];
                                                     newPdfs[i].title = e.target.value;
-                                                    setEditingLesson({...editingLesson, pdfUrls: newPdfs});
+                                                    setEditingLesson({ ...editingLesson, pdfUrls: newPdfs });
                                                 }} className="flex-1 text-sm p-2 rounded-lg border border-red-200" placeholder="الاسم" />
                                                 <input value={pdf.url} onChange={e => {
                                                     const newPdfs = [...(editingLesson?.pdfUrls || [])];
                                                     newPdfs[i].url = e.target.value;
-                                                    setEditingLesson({...editingLesson, pdfUrls: newPdfs});
+                                                    setEditingLesson({ ...editingLesson, pdfUrls: newPdfs });
                                                 }} className="flex-1 text-sm p-2 rounded-lg border border-red-200 text-left" dir="ltr" placeholder="URL" />
                                             </div>
                                         ))}
-                                        <button onClick={() => setEditingLesson({...editingLesson, pdfUrls: [...(editingLesson?.pdfUrls || []), {title: '', url: ''}]})} className="text-xs font-bold text-red-500 bg-white px-3 py-1 rounded-full border border-red-200">+ إضافة ملف</button>
+                                        <button onClick={() => setEditingLesson({ ...editingLesson, pdfUrls: [...(editingLesson?.pdfUrls || []), { title: '', url: '' }] })} className="text-xs font-bold text-red-500 bg-white px-3 py-1 rounded-full border border-red-200">+ إضافة ملف</button>
                                     </div>
                                 </div>
 
@@ -1136,16 +1101,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                                 <input value={audio.title} onChange={e => {
                                                     const newAudios = [...(editingLesson?.audioUrls || [])];
                                                     newAudios[i].title = e.target.value;
-                                                    setEditingLesson({...editingLesson, audioUrls: newAudios});
+                                                    setEditingLesson({ ...editingLesson, audioUrls: newAudios });
                                                 }} className="flex-1 text-sm p-2 rounded-lg border border-purple-200" placeholder="الاسم" />
                                                 <input value={audio.url} onChange={e => {
                                                     const newAudios = [...(editingLesson?.audioUrls || [])];
                                                     newAudios[i].url = e.target.value;
-                                                    setEditingLesson({...editingLesson, audioUrls: newAudios});
+                                                    setEditingLesson({ ...editingLesson, audioUrls: newAudios });
                                                 }} className="flex-1 text-sm p-2 rounded-lg border border-purple-200 text-left" dir="ltr" placeholder="URL" />
                                             </div>
                                         ))}
-                                        <button onClick={() => setEditingLesson({...editingLesson, audioUrls: [...(editingLesson?.audioUrls || []), {title: '', url: ''}]})} className="text-xs font-bold text-purple-500 bg-white px-3 py-1 rounded-full border border-purple-200">+ إضافة صوت</button>
+                                        <button onClick={() => setEditingLesson({ ...editingLesson, audioUrls: [...(editingLesson?.audioUrls || []), { title: '', url: '' }] })} className="text-xs font-bold text-purple-500 bg-white px-3 py-1 rounded-full border border-purple-200">+ إضافة صوت</button>
                                     </div>
                                 </div>
                             </div>

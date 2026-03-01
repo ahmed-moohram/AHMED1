@@ -26,7 +26,7 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [didAutoRouteAdmin, setDidAutoRouteAdmin] = useState(false);
   const [userName, setUserName] = useState(''); // Store User Name
-  const [userProfile, setUserProfile] = useState<{phone?: string; student_id?: string} | null>(null);
+  const [userProfile, setUserProfile] = useState<{ phone?: string; student_id?: string } | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [banReason, setBanReason] = useState('');
@@ -160,17 +160,7 @@ function App() {
           masterIds.includes((profile as any)?.student_id) ||
           masterIds.includes(emailId);
 
-        const approval = String((profile as any)?.approval_status || 'pending');
-        if (!isPrivileged && (approval === 'pending' || approval === 'rejected')) {
-          await supabase.auth.signOut();
-          setIsAuthenticated(false);
-          setIsAdmin(false);
-          setIsMasterAdmin(false);
-          setUserName('');
-          setBanReason('');
-          setViewState('AUTH');
-          return;
-        }
+        // Students are auto-approved on registration, no approval gate needed
 
         // Enforce single-device login for students (admins/master bypass)
 
@@ -194,7 +184,7 @@ function App() {
             }
           }
         }
-        
+
         // Allow access if Role is admin OR if it is the Master ID (Frontend Override)
         // Note: Added 0005209667 to handle the typo case shown in screenshots
         setIsMasterAdmin(masterIds.includes(emailId));
@@ -235,34 +225,34 @@ function App() {
 
   const fetchCourses = async () => {
     setLoadingCourses(true);
-    
+
     if (!isSupabaseConfigured) {
-        setCourses(MOCK_COURSES);
-        setLoadingCourses(false);
-        return;
+      setCourses(MOCK_COURSES);
+      setLoadingCourses(false);
+      return;
     }
 
     try {
       const { data, error } = await supabase
-          .from('courses')
-          .select(`*, lessons (*)`)
-          .order('created_at', { ascending: false });
-      
+        .from('courses')
+        .select(`*, lessons (*)`)
+        .order('created_at', { ascending: false });
+
       if (!error && data && data.length > 0) {
-          const mappedCourses = data.map((c: any) => ({
-              ...c,
-              lessons: (c.lessons || []).map((l: any) => ({
-                  ...l,
-                  videoUrl: l.video_url,
-                  pdfUrls: l.pdf_urls || [],
-                  audioUrls: l.audio_urls || [],
-                  isLocked: l.is_locked
-              }))
-          }));
-          setCourses(mappedCourses);
+        const mappedCourses = data.map((c: any) => ({
+          ...c,
+          lessons: (c.lessons || []).map((l: any) => ({
+            ...l,
+            videoUrl: l.video_url,
+            pdfUrls: l.pdf_urls || [],
+            audioUrls: l.audio_urls || [],
+            isLocked: l.is_locked
+          }))
+        }));
+        setCourses(mappedCourses);
       } else {
-          console.log("Using Mock Data");
-          setCourses(MOCK_COURSES);
+        console.log("Using Mock Data");
+        setCourses(MOCK_COURSES);
       }
     } catch (e) {
       console.log("Using Mock Data due to error");
@@ -285,7 +275,7 @@ function App() {
 
   const handleLogout = async () => {
     if (isSupabaseConfigured) {
-        await supabase.auth.signOut();
+      await supabase.auth.signOut();
     }
     setIsAuthenticated(false);
     setIsAdmin(false);
@@ -298,7 +288,7 @@ function App() {
   };
 
   // --- Navigation Handlers ---
-  
+
   // Home -> Course Detail (Protected)
   const handleCourseClick = (course: Course) => {
     if (!isAuthenticated) {
@@ -329,9 +319,9 @@ function App() {
 
   if (viewState === 'AUTH') {
     return (
-      <Auth 
-        onLoginSuccess={handleLoginSuccess} 
-        onBack={() => setViewState('HOME')} 
+      <Auth
+        onLoginSuccess={handleLoginSuccess}
+        onBack={() => setViewState('HOME')}
       />
     );
   }
@@ -357,137 +347,137 @@ function App() {
   }
 
   if (viewState === 'ADMIN_DASHBOARD') {
-      return <AdminDashboard onLogout={handleLogout} />;
+    return <AdminDashboard onLogout={handleLogout} />;
   }
 
   if (viewState === 'AHMED_MOHRAM') {
-      return <AdminDashboard onLogout={handleLogout} initialTab="students" showAllUsers />;
+    return <AdminDashboard onLogout={handleLogout} initialTab="students" showAllUsers />;
   }
 
   return (
     <div className="min-h-screen text-dark font-cairo">
       <Background />
-      
+
       {/* Global Navbar */}
-      <Navbar 
-        onHomeClick={handleBackToHome} 
+      <Navbar
+        onHomeClick={handleBackToHome}
         isAuthenticated={isAuthenticated}
         userName={userName}
         onAuthClick={() => setViewState('AUTH')}
         onLogoutClick={handleLogout}
       />
-      
+
       {/* Admin Button (Floating) */}
       {isAdmin && viewState === 'HOME' && (
-          <button 
-            onClick={() => setViewState('ADMIN_DASHBOARD')}
-            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 bg-dark text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-bold shadow-xl hover:scale-105 transition-transform flex items-center gap-2 text-xs sm:text-sm"
-          >
-              <Shield size={18} />
-              لوحة التحكم
-          </button>
+        <button
+          onClick={() => setViewState('ADMIN_DASHBOARD')}
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 bg-dark text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-bold shadow-xl hover:scale-105 transition-transform flex items-center gap-2 text-xs sm:text-sm"
+        >
+          <Shield size={18} />
+          لوحة التحكم
+        </button>
       )}
-      
+
       {/* Home View */}
       <div className={viewState === 'HOME' ? 'block' : 'hidden'}>
         <main className="container mx-auto px-3 sm:px-4 lg:px-8 relative z-10">
-          
+
           {/* Luxury Hero Section */}
           <div className="pt-28 sm:pt-32 pb-16 sm:pb-24 text-center max-w-5xl mx-auto">
-             <motion.div
-               initial={{ opacity: 0, y: 30 }}
-               animate={{ opacity: 1, y: 0 }}
-               transition={{ duration: 0.8, ease: "easeOut" }}
-               className="relative"
-             >
-               {/* Decorative Glow */}
-               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] sm:w-[500px] h-[220px] sm:h-[300px] bg-gradient-to-r from-primary/20 to-secondary/20 blur-[110px] sm:blur-[120px] rounded-full pointer-events-none -z-10" />
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="relative"
+            >
+              {/* Decorative Glow */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] sm:w-[500px] h-[220px] sm:h-[300px] bg-gradient-to-r from-primary/20 to-secondary/20 blur-[110px] sm:blur-[120px] rounded-full pointer-events-none -z-10" />
 
-               <div className="inline-flex items-center gap-2 py-1.5 px-4 rounded-full bg-white border border-gray-200/60 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] mb-8 backdrop-blur-sm">
-                 <span className="flex h-1.5 w-1.5 rounded-full bg-secondary"></span>
-                 <span className="text-[10px] sm:text-xs font-bold tracking-wide text-gray-500 uppercase">مستقبل التعليم الرقمي</span>
-               </div>
-               
-               <h1 className="text-4xl sm:text-6xl md:text-8xl font-black mb-6 sm:mb-8 tracking-tighter leading-[0.95] text-dark">
-                 أطلق العنان <br />
-                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">لقدراتك الكامنة.</span>
-               </h1>
-               
-               <p className="text-base sm:text-lg md:text-xl text-subtle max-w-2xl mx-auto mb-8 sm:mb-12 font-medium leading-relaxed">
-                 منصة تعليمية بتجربة سينمائية فريدة. نجمع بين جمال التصميم وقوة المحتوى لنقدم لك تجربة تعليمية لا تُنسى.
-               </p>
+              <div className="inline-flex items-center gap-2 py-1.5 px-4 rounded-full bg-white border border-gray-200/60 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] mb-8 backdrop-blur-sm">
+                <span className="flex h-1.5 w-1.5 rounded-full bg-secondary"></span>
+                <span className="text-[10px] sm:text-xs font-bold tracking-wide text-gray-500 uppercase">مستقبل التعليم الرقمي</span>
+              </div>
 
-               <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-                 <button onClick={() => window.scrollTo({top: 800, behavior: 'smooth'})} className="h-12 sm:h-14 px-6 sm:px-8 rounded-full bg-dark text-white font-bold text-sm hover:shadow-lg hover:shadow-dark/20 hover:scale-105 transition-all duration-300 flex items-center gap-2 group">
-                    تصفح الكورسات
-                    <ArrowUpLeft size={18} className="group-hover:-translate-x-1 group-hover:-translate-y-1 transition-transform" />
+              <h1 className="text-4xl sm:text-6xl md:text-8xl font-black mb-6 sm:mb-8 tracking-tighter leading-[0.95] text-dark">
+                أطلق العنان <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">لقدراتك الكامنة.</span>
+              </h1>
+
+              <p className="text-base sm:text-lg md:text-xl text-subtle max-w-2xl mx-auto mb-8 sm:mb-12 font-medium leading-relaxed">
+                منصة تعليمية بتجربة سينمائية فريدة. نجمع بين جمال التصميم وقوة المحتوى لنقدم لك تجربة تعليمية لا تُنسى.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
+                <button onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })} className="h-12 sm:h-14 px-6 sm:px-8 rounded-full bg-dark text-white font-bold text-sm hover:shadow-lg hover:shadow-dark/20 hover:scale-105 transition-all duration-300 flex items-center gap-2 group">
+                  تصفح الكورسات
+                  <ArrowUpLeft size={18} className="group-hover:-translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                </button>
+                {!isAuthenticated && (
+                  <button onClick={() => setViewState('AUTH')} className="h-12 sm:h-14 px-6 sm:px-8 rounded-full bg-white text-dark border border-gray-200 font-bold text-sm hover:bg-gray-50 transition-all duration-300">
+                    تسجيل الدخول
                   </button>
-                  {!isAuthenticated && (
-                     <button onClick={() => setViewState('AUTH')} className="h-12 sm:h-14 px-6 sm:px-8 rounded-full bg-white text-dark border border-gray-200 font-bold text-sm hover:bg-gray-50 transition-all duration-300">
-                        تسجيل الدخول
-                     </button>
-                  )}
-               </div>
-             </motion.div>
+                )}
+              </div>
+            </motion.div>
           </div>
 
           {/* Section Divider */}
           <div className="flex items-center justify-center mb-20 opacity-20">
-             <div className="h-24 w-px bg-gradient-to-b from-transparent via-dark to-transparent"></div>
+            <div className="h-24 w-px bg-gradient-to-b from-transparent via-dark to-transparent"></div>
           </div>
 
           {/* Featured Courses Grid */}
           <div className="pb-32">
             <div className="flex items-end justify-between mb-10 px-2">
-               <div>
-                  <h2 className="text-3xl font-black text-dark tracking-tight mb-2">مختارات لك</h2>
-                  <p className="text-subtle text-sm">أحدث المواد التعليمية المضافة حديثاً</p>
-               </div>
+              <div>
+                <h2 className="text-3xl font-black text-dark tracking-tight mb-2">مختارات لك</h2>
+                <p className="text-subtle text-sm">أحدث المواد التعليمية المضافة حديثاً</p>
+              </div>
             </div>
 
             {loadingCourses ? (
-                <div className="flex justify-center py-20">
-                    <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                </div>
+              <div className="flex justify-center py-20">
+                <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {courses.length > 0 ? courses.map((course, index) => (
-                    <CourseCard 
-                    key={course.id} 
-                    course={course} 
+                  <CourseCard
+                    key={course.id}
+                    course={course}
                     onClick={handleCourseClick}
                     index={index}
-                    />
+                  />
                 )) : (
-                    <div className="col-span-full text-center py-20 text-gray-400">
-                        لا توجد كورسات متاحة حالياً
-                    </div>
+                  <div className="col-span-full text-center py-20 text-gray-400">
+                    لا توجد كورسات متاحة حالياً
+                  </div>
                 )}
-                </div>
+              </div>
             )}
           </div>
         </main>
 
         <footer className="relative overflow-hidden border-t border-gray-200/60 py-14 bg-gradient-to-b from-white/70 to-white/40 backdrop-blur-md">
-           <div className="absolute inset-0 pointer-events-none">
-             <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[520px] h-[280px] bg-gradient-to-r from-primary/15 to-secondary/15 blur-[120px] rounded-full" />
-           </div>
-           <div className="container mx-auto px-4 text-center relative">
-             <div className="max-w-4xl mx-auto">
-               <h2 className="text-2xl font-black text-dark tracking-tighter">نبض التمريض</h2>
-               <div className="mt-2 text-[12px] font-bold text-gray-400">نبض التمريض</div>
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[520px] h-[280px] bg-gradient-to-r from-primary/15 to-secondary/15 blur-[120px] rounded-full" />
+          </div>
+          <div className="container mx-auto px-4 text-center relative">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-2xl font-black text-dark tracking-tighter">نبض التمريض</h2>
+              <div className="mt-2 text-[12px] font-bold text-gray-400">نبض التمريض</div>
 
 
-               <div className="mt-10 text-[11px] text-gray-400">جميع الحقوق محفوظة ل احمد محرم© 2026.</div>
-             </div>
-           </div>
+              <div className="mt-10 text-[11px] text-gray-400">جميع الحقوق محفوظة ل احمد محرم© 2026.</div>
+            </div>
+          </div>
         </footer>
       </div>
 
       {/* Course Detail View */}
       {viewState === 'COURSE_DETAIL' && selectedCourse && (
-        <CourseDetail 
-          course={selectedCourse} 
+        <CourseDetail
+          course={selectedCourse}
           onBack={handleBackToHome}
           onLessonSelect={handleLessonSelect}
         />
@@ -495,8 +485,8 @@ function App() {
 
       {/* Player View */}
       {viewState === 'PLAYER' && selectedCourse && selectedLesson && (
-        <VideoPlayer 
-          course={selectedCourse} 
+        <VideoPlayer
+          course={selectedCourse}
           lesson={selectedLesson}
           onBack={handleBackToCourse}
           userProfile={userProfile}
