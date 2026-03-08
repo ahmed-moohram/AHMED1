@@ -453,8 +453,8 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
           <h1 className="text-3xl font-black text-dark tracking-tight mb-2">
             {isLogin ? 'أهلاً بك' : 'حساب جديد'}
           </h1>
-          <p className="text-subtle text-sm font-medium">
-             منصة نبض التمريض التعليمية
+          <p className="text-2xl mt-1 tracking-wider" style={{ fontFamily: '"Aref Ruqaa", serif', color: '#00d4ff', textShadow: '0 0 10px rgba(0,212,255,0.3)' }}>
+            أحمد محرم
           </p>
         </div>
 
