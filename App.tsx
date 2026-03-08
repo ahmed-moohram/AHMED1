@@ -499,7 +499,7 @@ function App() {
               </div>
               <div>
                 <h2 className="text-lg font-black gradient-text">نبض التمريض</h2>
-                <p className="text-2xl mt-1 tracking-wider" style={{ fontFamily: '"Aref Ruqaa", serif', color: '#00d4ff', textShadow: '0 0 15px rgba(0,212,255,0.6)' }}>أحمد محرم</p>
+                <p className="text-2xl mt-1 tracking-wider font-bold" style={{ fontFamily: '"El Messiri", sans-serif', color: '#00d4ff', textShadow: '0 0 15px rgba(0,212,255,0.6)' }}>أحمد محرم</p>
               </div>
             </div>
             <div className="h-px w-full mb-6" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,212,255,0.18), transparent)' }} />
