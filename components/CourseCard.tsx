@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ArrowUpLeft, PlayCircle } from 'lucide-react';
+import { ArrowUpLeft } from 'lucide-react';
 import { Course } from '../types';
 
 interface CourseCardProps {
@@ -9,64 +9,124 @@ interface CourseCardProps {
   index: number;
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({ course, onClick, index }) => {
-  const firstTag = Array.isArray((course as any)?.tags) ? (course as any).tags[0] : undefined;
+const CourseCard: React.FC<CourseCardProps> = ({ course, onClick }) => {
+  const tags = Array.isArray((course as any)?.tags) ? (course as any).tags : [];
   const lessonsCount = Array.isArray((course as any)?.lessons) ? (course as any).lessons.length : 0;
 
   return (
     <div
       onClick={() => onClick(course)}
-      className="gpu-accelerate group relative bg-surface rounded-[2rem] p-3 cursor-pointer border border-gray-100/50 shadow-card hover:shadow-card-hover transition-all duration-500 hover:-translate-y-1"
+      className="card-3d group relative cursor-pointer rounded-[1.5rem] overflow-hidden"
+      style={{
+        background: 'linear-gradient(145deg, rgba(13,31,60,0.95), rgba(8,18,38,0.98))',
+        border: '1px solid rgba(0,212,255,0.15)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+      }}
     >
-      {/* Image Wrapper */}
-      <div className="relative aspect-[4/3] rounded-[1.5rem] overflow-hidden mb-5">
-        <div className="absolute inset-0 bg-dark/0 group-hover:bg-dark/10 transition-colors duration-500 z-10" />
-        <img
-          src={course.thumbnail}
-          alt={course.title}
-          loading="lazy"
-          className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110"
+      {/* Shine overlay */}
+      <div className="card-3d-shine rounded-[1.5rem]" />
+
+      {/* Top neon strip on hover */}
+      <div
+        className="absolute top-0 inset-x-0 h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20 pointer-events-none"
+        style={{ background: 'linear-gradient(90deg, transparent, #00d4ff, transparent)' }}
+      />
+
+      {/* Image */}
+      <div className="relative overflow-hidden" style={{ aspectRatio: '16/9' }}>
+        {/* Overlay gradient */}
+        <div
+          className="absolute inset-0 z-10 pointer-events-none"
+          style={{ background: 'linear-gradient(to top, rgba(8,18,38,0.9) 0%, rgba(8,18,38,0.2) 60%, transparent 100%)' }}
         />
 
-        {/* Floating Tag */}
-        <div className="absolute top-4 right-4 z-20">
-          <span className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-white/90 text-dark rounded-full shadow-sm border border-white/20">
-            {course.level}
+        {course.thumbnail ? (
+          <img
+            src={course.thumbnail}
+            alt={course.title}
+            loading="lazy"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          />
+        ) : (
+          /* Fallback when no image */
+          <div
+            className="w-full h-full flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, rgba(0,80,140,0.6), rgba(2,8,24,0.9))' }}
+          >
+            <svg width="48" height="48" viewBox="0 0 44 44" fill="none" className="opacity-40">
+              <rect x="16" y="4" width="12" height="36" rx="5" fill="rgba(0,212,255,0.6)" />
+              <rect x="4" y="16" width="36" height="12" rx="5" fill="rgba(0,212,255,0.6)" />
+            </svg>
+          </div>
+        )}
+
+        {/* Badges */}
+        <div className="absolute top-3 right-3 z-20">
+          <span
+            className="px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase rounded-full"
+            style={{
+              background: 'rgba(0,10,20,0.6)',
+              border: '1px solid rgba(0,212,255,0.5)',
+              color: '#00d4ff',
+              backdropFilter: 'blur(8px)',
+            }}
+          >
+            {course.level || 'متوسط'}
           </span>
         </div>
-
-        {/* Play Button Overlay (appears on hover) */}
-        {/* removed */}
+        <div className="absolute bottom-3 left-3 z-20">
+          <span
+            className="px-2.5 py-1 text-[10px] font-bold rounded-full text-white/80"
+            style={{
+              background: 'rgba(0,0,0,0.5)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
+          >
+            {lessonsCount} محاضرة
+          </span>
+        </div>
       </div>
 
-      {/* Card Body */}
-      <div className="px-2 pb-4">
-        {/* Meta Info */}
-        <div className="flex items-center gap-2 mb-3 opacity-60">
-          <span className="text-xs font-semibold text-primary uppercase tracking-wide">
-            {firstTag || ''}
-          </span>
-          <span className="w-1 h-1 rounded-full bg-gray-300" />
-          <span className="text-xs text-gray-500">
-            {lessonsCount} دروس
-          </span>
-        </div>
+      {/* Card body */}
+      <div className="p-5 relative z-10">
+        {/* Tag */}
+        {tags[0] && (
+          <div className="flex items-center gap-2 mb-3">
+            <span
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ background: '#00d4ff', boxShadow: '0 0 6px rgba(0,212,255,0.8)' }}
+            />
+            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(0,212,255,0.75)' }}>
+              {tags[0]}
+            </span>
+          </div>
+        )}
 
         {/* Title */}
-        <h3 className="text-xl font-bold text-dark mb-3 leading-tight group-hover:text-primary transition-colors">
+        <h3 className="text-sm sm:text-base font-black text-white mb-4 leading-snug">
           {course.title}
         </h3>
 
-        {/* Divider */}
-        <div className="h-px w-full bg-gradient-to-r from-gray-100 to-transparent my-4" />
+        {/* Neon divider */}
+        <div
+          className="h-px w-full mb-4 opacity-20 group-hover:opacity-50 transition-opacity duration-500"
+          style={{ background: 'linear-gradient(90deg, #00d4ff, transparent)' }}
+        />
 
-        {/* Footer (Simplified - No Instructor) */}
+        {/* Footer row */}
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-gray-400 group-hover:text-primary transition-colors">
+          <span className="text-xs text-slate-500 group-hover:text-cyan-400 transition-colors duration-300 font-bold">
             عرض المحتوى
           </span>
-
-          <div className="w-8 h-8 rounded-full bg-white border border-gray-100 text-dark flex items-center justify-center group-hover:bg-dark group-hover:text-white group-hover:border-dark transition-all duration-300 shadow-sm">
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
+            style={{
+              background: 'rgba(0,212,255,0.08)',
+              border: '1px solid rgba(0,212,255,0.22)',
+              color: '#00d4ff',
+            }}
+          >
             <ArrowUpLeft size={14} />
           </div>
         </div>

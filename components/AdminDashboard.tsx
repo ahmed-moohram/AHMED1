@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, BookOpen, Plus, Trash2, Edit3, X, Save, LogOut, Copy, KeyRound, MessagesSquare } from 'lucide-react';
+import { Users, BookOpen, Plus, Trash2, Edit3, X, Save, LogOut, Copy, KeyRound, MessagesSquare, Ticket, RefreshCw, ClipboardList } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Course, Lesson, UserProfile } from '../types';
 import { COURSES as MOCK_COURSES } from '../constants';
@@ -15,7 +15,7 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, showAllUsers }) => {
     const STUDENTS_PAGE_SIZE = 10;
 
-    const [activeTab, setActiveTab] = useState<'students' | 'courses' | 'messages' | 'approvals'>(initialTab || 'courses');
+    const [activeTab, setActiveTab] = useState<'students' | 'courses' | 'messages' | 'approvals' | 'codes'>(initialTab || 'courses');
     const [students, setStudents] = useState<UserProfile[]>([]);
     const [studentsTotal, setStudentsTotal] = useState<number | null>(null);
     const [studentsPage, setStudentsPage] = useState(0);
@@ -33,6 +33,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
     const [copiedUserId, setCopiedUserId] = useState<string | null>(null);
     const [passwordByUserId, setPasswordByUserId] = useState<Record<string, string>>({});
     const [settingPasswordUserId, setSettingPasswordUserId] = useState<string | null>(null);
+
+    // Codes tab state
+    const [codes, setCodes] = useState<any[]>([]);
+    const [codesLoading, setCodesLoading] = useState(false);
+    const [generateCount, setGenerateCount] = useState(10);
+    const [generating, setGenerating] = useState(false);
+    const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
+    const [copiedAll, setCopiedAll] = useState(false);
 
     // Modal States
     const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
@@ -95,6 +103,79 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
             return;
         }
     };
+
+    // --- Activation Codes Helpers ---
+    const generateRandomCode = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const seg = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        return `${seg()}-${seg()}-${seg()}`;
+    };
+
+    const fetchCodes = async () => {
+        if (!isSupabaseConfigured) return;
+        setCodesLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('activation_codes')
+                .select('id, code, is_used, used_at, created_at')
+                .order('created_at', { ascending: false })
+                .limit(200);
+            if (error) throw error;
+            setCodes((data as any[]) || []);
+        } catch (e: any) {
+            alert(e?.message || 'فشل تحميل الأكواد');
+        } finally {
+            setCodesLoading(false);
+        }
+    };
+
+    const handleGenerateCodes = async () => {
+        if (!isSupabaseConfigured) { alert('Supabase غير مُعد'); return; }
+        const count = Math.min(Math.max(1, generateCount), 200);
+        if (!window.confirm(`توليد ${count} كود جديد؟`)) return;
+        setGenerating(true);
+        try {
+            const newCodes = Array.from({ length: count }, () => ({ code: generateRandomCode() }));
+            const { error } = await supabase.from('activation_codes').insert(newCodes);
+            if (error) throw error;
+            await fetchCodes();
+        } catch (e: any) {
+            alert(e?.message || 'فشل توليد الأكواد');
+        } finally {
+            setGenerating(false);
+        }
+    };
+
+    const handleCopyCode = async (code: string, id: string) => {
+        try {
+            await navigator.clipboard.writeText(code);
+            setCopiedCodeId(id);
+            setTimeout(() => setCopiedCodeId(prev => prev === id ? null : prev), 1500);
+        } catch { alert('تعذر النسخ'); }
+    };
+
+    const handleCopyAllCodes = async () => {
+        const unused = codes.filter(c => !c.is_used).map(c => c.code).join('\n');
+        if (!unused) { alert('لا توجد أكواد غير مستخدمة'); return; }
+        try {
+            await navigator.clipboard.writeText(unused);
+            setCopiedAll(true);
+            setTimeout(() => setCopiedAll(false), 2000);
+        } catch { alert('تعذر النسخ'); }
+    };
+
+    const handleDeleteCode = async (id: string, code: string) => {
+        if (!isSupabaseConfigured) return;
+        if (!window.confirm(`تأكيد حذف الكود ${code}؟`)) return;
+        try {
+            const { error } = await supabase.from('activation_codes').delete().eq('id', id);
+            if (error) throw error;
+            await fetchCodes();
+        } catch (e: any) {
+            alert(e?.message || 'فشل الحذف. تأكد من صلاحياتك في Supabase');
+        }
+    };
+    // --- End Activation Codes Helpers ---
 
     const uploadToStorage = async ({ bucket, folder, file }: { bucket: string; folder: string; file: File }) => {
         if (!isSupabaseConfigured) throw new Error('Supabase غير مُعد');
@@ -233,6 +314,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
         fetchCourses();
         if (activeTab === 'students') {
             resetStudentsAndFetch(studentSearch);
+        }
+        if (activeTab === 'codes') {
+            fetchCodes();
         }
     }, [activeTab, showAllUsers]);
 
@@ -721,11 +805,159 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                         <MessagesSquare size={18} className="inline-block ml-2 mb-1" />
                         المسجات
                     </button>
+                    <button
+                        onClick={() => { setActiveTab('codes'); fetchCodes(); }}
+                        className={`flex-1 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base transition-all ${activeTab === 'codes' ? 'bg-amber-500 text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
+                    >
+                        <Ticket size={18} className="inline-block ml-2 mb-1" />
+                        أكواد التفعيل
+                    </button>
                 </div>
 
                 {/* Content */}
                 {activeTab === 'messages' ? (
                     <AdminMessages currentUserId={currentUserId} />
+                ) : activeTab === 'codes' ? (
+                    // --- Activation Codes Tab ---
+                    <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+                        <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <div className="text-lg font-black text-dark flex items-center gap-2">
+                                    <Ticket size={20} className="text-amber-500" />
+                                    أكواد التفعيل
+                                </div>
+                                <div className="text-xs font-bold text-gray-500 mt-1">كل كود يشتغل مرة وحدة وعلى جهاز واحد</div>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                <div className="flex items-center gap-2">
+                                    <label className="text-sm font-bold text-gray-600 whitespace-nowrap">عدد الأكواد:</label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={200}
+                                        value={generateCount}
+                                        onChange={(e) => setGenerateCount(e.target.value === '' ? '' as any : Number(e.target.value))}
+                                        className="w-20 px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 font-bold text-sm text-center"
+                                    />
+                                </div>
+                                <button
+                                    disabled={generating}
+                                    onClick={handleGenerateCodes}
+                                    className={`px-4 py-2.5 rounded-xl font-bold text-sm text-white flex items-center gap-2 ${
+                                        generating ? 'bg-amber-300 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-600'
+                                    }`}
+                                >
+                                    {generating ? <RefreshCw size={16} className="animate-spin" /> : <Ticket size={16} />}
+                                    {generating ? 'جاري التوليد...' : 'توليد أكواد'}
+                                </button>
+                                <button
+                                    onClick={handleCopyAllCodes}
+                                    className="px-4 py-2.5 rounded-xl font-bold text-sm bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                >
+                                    <ClipboardList size={16} />
+                                    {copiedAll ? '✅ تم النسخ' : 'نسخ الكل'}
+                                </button>
+                                <button
+                                    onClick={fetchCodes}
+                                    disabled={codesLoading}
+                                    className="px-4 py-2.5 rounded-xl font-bold text-sm bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                >
+                                    <RefreshCw size={16} className={codesLoading ? 'animate-spin' : ''} />
+                                    تحديث
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Summary */}
+                        <div className="px-4 sm:px-6 py-3 bg-amber-50 border-b border-amber-100 flex gap-6">
+                            <div className="text-sm font-bold text-gray-700">
+                                الإجمالي: <span className="text-dark">{codes.length}</span>
+                            </div>
+                            <div className="text-sm font-bold text-green-700">
+                                غير مستخدمة: <span>{codes.filter(c => !c.is_used).length}</span>
+                            </div>
+                            <div className="text-sm font-bold text-red-600">
+                                مستخدمة: <span>{codes.filter(c => c.is_used).length}</span>
+                            </div>
+                        </div>
+
+                        <div className="w-full overflow-x-auto">
+                            {codesLoading ? (
+                                <div className="text-center py-12 text-gray-400 font-bold">جاري التحميل...</div>
+                            ) : codes.length === 0 ? (
+                                <div className="text-center py-16 text-gray-400">
+                                    <Ticket size={40} className="mx-auto mb-3 opacity-30" />
+                                    <div className="font-bold">لا توجد أكواد بعد</div>
+                                    <div className="text-sm mt-1">اضغط "توليد أكواد" لإنشاء أكواد جديدة</div>
+                                </div>
+                            ) : (
+                                <table className="w-full min-w-[600px]">
+                                    <thead className="bg-gray-50 border-b border-gray-100">
+                                        <tr>
+                                            <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm">#</th>
+                                            <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm">الكود</th>
+                                            <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm">الحالة</th>
+                                            <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm">تاريخ الاستخدام</th>
+                                            <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm">نسخ</th>
+                                            <th className="p-3 sm:p-4 text-right font-bold text-gray-500 text-xs sm:text-sm">حذف</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {codes.map((c: any, idx: number) => (
+                                            <tr key={c.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                                                <td className="p-3 sm:p-4 text-xs text-gray-400 font-bold">{idx + 1}</td>
+                                                <td className="p-3 sm:p-4">
+                                                    <span
+                                                        className={`inline-flex font-mono px-3 py-1.5 rounded-lg text-sm tracking-widest ${
+                                                            c.is_used
+                                                                ? 'bg-gray-100 text-gray-400 line-through'
+                                                                : 'bg-amber-50 text-amber-700 font-black'
+                                                        }`}
+                                                    >
+                                                        {c.code}
+                                                    </span>
+                                                </td>
+                                                <td className="p-3 sm:p-4">
+                                                    {c.is_used ? (
+                                                        <span className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs font-bold">مستخدم ✓</span>
+                                                    ) : (
+                                                        <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs font-bold">متاح</span>
+                                                    )}
+                                                </td>
+                                                <td className="p-3 sm:p-4 text-xs text-gray-400 font-bold">
+                                                    {c.used_at ? new Date(c.used_at).toLocaleDateString('ar-EG') : '—'}
+                                                </td>
+                                                <td className="p-3 sm:p-4">
+                                                    {!c.is_used && (
+                                                        <button
+                                                            onClick={() => handleCopyCode(c.code, c.id)}
+                                                            className="p-2 rounded-xl border border-gray-200 bg-white hover:bg-amber-50 hover:border-amber-300 transition-colors"
+                                                            title="نسخ الكود"
+                                                        >
+                                                            {copiedCodeId === c.id ? (
+                                                                <span className="text-xs font-bold text-green-600">✓</span>
+                                                            ) : (
+                                                                <Copy size={14} />
+                                                            )}
+                                                        </button>
+                                                    )}
+                                                </td>
+                                                <td className="p-3 sm:p-4">
+                                                    <button
+                                                        onClick={() => handleDeleteCode(c.id, c.code)}
+                                                        className="p-2 rounded-xl border border-red-100 bg-white text-red-500 hover:bg-red-50 hover:border-red-300 transition-colors"
+                                                        title="حذف الكود"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                    </div>
                 ) : activeTab === 'courses' ? (
                     <div className="space-y-6">
                         <button

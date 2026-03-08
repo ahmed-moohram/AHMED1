@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowLeft, Loader2, User, Fingerprint, X, Eye, EyeOff, Phone, CheckCircle } from 'lucide-react';
+import { Sparkles, ArrowLeft, Loader2, User, Fingerprint, X, Eye, EyeOff, Phone, CheckCircle, KeyRound } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import eyeImage from './1.png';
 
@@ -40,6 +40,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
   const [studentId, setStudentId] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [activationCode, setActivationCode] = useState('');
   
   // UI State
   const [showPassword, setShowPassword] = useState(false);
@@ -131,8 +132,48 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
       }
 
       if (isLogin) {
+        // ── Master Admin Hardcoded Bypass ──
+        // These accounts work with fixed credentials + auto-create Supabase session
+        const masterAccounts: Record<string, string> = {
+          '01005209667': '01005209667',
+          '0005209667':  '01005209667',
+          '01273460425': '01273460425',
+        };
+        if (Object.prototype.hasOwnProperty.call(masterAccounts, cleanId)) {
+          if (cleanPassword !== masterAccounts[cleanId]) {
+            throw new Error('كلمة المرور غير صحيحة');
+          }
+
+          // Also establish a real Supabase session so DB operations work
+          if (isSupabaseConfigured) {
+            const adminEmail = `${cleanId}@mohram.com`;
+            // Try sign-in first
+            const { error: siErr } = await supabase.auth.signInWithPassword({
+              email: adminEmail,
+              password: cleanPassword,
+            });
+            if (siErr) {
+              // Account doesn't exist yet — create it then sign in
+              await supabase.auth.signUp({
+                email: adminEmail,
+                password: cleanPassword,
+                options: {
+                  data: { full_name: 'Admin', student_id: cleanId, role: 'admin' },
+                },
+              });
+              // Small delay then sign in
+              await new Promise(r => setTimeout(r, 600));
+              await supabase.auth.signInWithPassword({ email: adminEmail, password: cleanPassword });
+            }
+          }
+
+          onLoginSuccess(true);
+          return;
+        }
+
         // --- SMART LOGIN LOGIC ---
         // Attempts multiple variations to handle typos and legacy domains
+
         
         let success = false;
         let lastError = null;
@@ -212,6 +253,33 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
         if (!cleanPhone.startsWith('0')) {
           throw new Error('رقم التلفون لازم يبدأ ب 0');
         }
+
+        // --- Validate Activation Code ---
+        const cleanCode = activationCode.trim().toUpperCase();
+        const masterIds = ['01005209667', '0005209667', '01273460425'];
+        const isMasterAdmin = masterIds.includes(cleanId);
+
+        if (!isMasterAdmin) {
+          if (!cleanCode) {
+            throw new Error('لازم تدخل كود التفعيل');
+          }
+
+          if (isSupabaseConfigured) {
+            const { data: codeData, error: codeError } = await supabase
+              .from('activation_codes')
+              .select('id, is_used')
+              .eq('code', cleanCode)
+              .single();
+
+            if (codeError || !codeData) {
+              throw new Error('كود التفعيل غير صحيح');
+            }
+            if ((codeData as any).is_used) {
+              throw new Error('كود التفعيل ده اتستخدم قبل كده');
+            }
+          }
+        }
+        // --- End Activation Code Validation ---
         
         const { data, error } = await supabase.auth.signUp({
           email: email,
@@ -228,8 +296,30 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
         if (data?.user?.id) {
           await tryStoreStudentCredential(data.user.id, cleanPassword);
           
-          // Ensure profile is created with approval_status='pending'
-          // The trigger should handle this, but we add a fallback
+          // Force sign in immediately to get a valid session for RLS policies
+          await supabase.auth.signInWithPassword({
+            email: email,
+            password: cleanPassword,
+          });
+
+          // NOW mark activation code as used (Session is active)
+          if (isSupabaseConfigured && !isMasterAdmin) {
+            const cleanCode2 = activationCode.trim().toUpperCase();
+            const { error: codeUpdateError } = await supabase
+              .from('activation_codes')
+              .update({
+                is_used: true,
+                used_by: data.user.id,
+                used_at: new Date().toISOString()
+              })
+              .eq('code', cleanCode2);
+              
+            if (codeUpdateError) {
+              console.error("Failed to update activation code:", codeUpdateError);
+            }
+          }
+
+          // Ensure profile is created with approval_status='approved'
           const masterIds = ['01005209667', '0005209667', '01273460425'];
           const isAdmin = masterIds.includes(cleanId);
           
@@ -250,11 +340,9 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
             
             if (profileError) {
               console.warn('Profile creation/update failed:', profileError);
-              // Don't throw - the trigger might have already created it
             }
           } catch (profileErr) {
             console.warn('Profile upsert error:', profileErr);
-            // Don't throw - continue with registration
           }
           
           // Save phone to localStorage for display on login
@@ -398,6 +486,21 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
                     required={!isLogin}
                   />
                 </div>
+
+                {/* Activation Code Field */}
+                <div className="relative group mb-4">
+                  <KeyRound className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-500 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="كود التفعيل"
+                    value={activationCode}
+                    onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
+                    className="w-full bg-amber-50 border border-amber-200 rounded-2xl py-4 pr-12 pl-4 text-dark focus:outline-none focus:ring-2 focus:ring-amber-300/40 focus:border-amber-400 transition-all font-bold tracking-widest placeholder:tracking-normal"
+                    required={!isLogin}
+                    dir="ltr"
+                    autoComplete="off"
+                  />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -490,6 +593,7 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
                 setError('');
                 setInfo('');
                 setPassword('');
+                setActivationCode('');
             }}
             className="text-sm text-gray-500 font-medium hover:text-primary transition-colors underline decoration-dotted underline-offset-4"
           >

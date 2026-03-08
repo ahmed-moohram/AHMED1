@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/1.png" />
@@ -8,103 +7,241 @@
     <link rel="apple-touch-icon" href="/1.png" />
     <meta name="application-name" content="نبض التمريض" />
     <meta name="apple-mobile-web-app-title" content="نبض التمريض" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#020818" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>نبض التمريض</title>
-    <!-- Tailwind CSS -->
+    <title>نبض التمريض — منصة التمريض التعليمية</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        background: '#FAFAFA', // Pearl White
-                        surface: '#FFFFFF',
-                        primary: '#6366f1', // Indigo 500
-                        secondary: '#ec4899', // Pink 500
-                        dark: '#0f172a', // Slate 900
-                        subtle: '#94a3b8', // Slate 400
+                        background: '#020818',
+                        surface: '#0d1f3c',
+                        primary: '#00d4ff',
+                        secondary: '#22d3ee',
+                        accent: '#38bdf8',
+                        gold: '#f59e0b',
+                        dark: '#020818',
+                        subtle: '#64748b',
+                        muted: '#1e3a5f',
+                        card: '#0a1929',
                     },
-                    fontFamily: {
-                        cairo: ['Cairo', 'sans-serif'],
-                    },
-                    backgroundImage: {
-                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-                        'premium-shine': 'linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.5) 50%, transparent 75%)',
-                    },
+                    fontFamily: { cairo: ['Cairo', 'sans-serif'] },
                     boxShadow: {
-                        'glow': '0 0 40px -10px rgba(99, 102, 241, 0.3)',
-                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02)',
-                        'card-hover': '0 20px 40px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)',
-                    }
+                        'glow': '0 0 40px -5px rgba(0,212,255,0.5)',
+                        'glow-lg': '0 0 80px -10px rgba(0,212,255,0.4)',
+                        'card': '0 4px 20px rgba(0,0,0,0.5)',
+                        'card-hover': '0 25px 60px rgba(0,212,255,0.18)',
+                    },
                 }
             }
         }
     </script>
-    <!-- Google Fonts: Cairo -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
         body {
             font-family: 'Cairo', sans-serif;
-            background-color: #FAFAFA;
-            color: #0f172a;
+            background: #020818;
+            color: #f0f9ff;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
-        
-        .gpu-accelerate {
-            transform: translateZ(0);
-            will-change: transform;
+
+        /* ─── GPU layer for animated elements ─── */
+        .gpu { transform: translateZ(0); will-change: transform; }
+
+        /* ─── Glassmorphism ─── */
+        .glass {
+            background: rgba(13,31,60,0.55);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(0,212,255,0.18);
         }
-        /* Premium Grainy Texture */
-        
-        .bg-noise {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+        .glass-light {
+            background: rgba(255,255,255,0.035);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.07);
+        }
+
+        /* ─── Gradient text ─── */
+        .gradient-text {
+            background: linear-gradient(135deg, #00d4ff 0%, #7dd3fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .gradient-text-warm {
+            background: linear-gradient(135deg, #f59e0b 0%, #fde68a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ─── Neon text ─── */
+        .text-neon { color: #00d4ff; text-shadow: 0 0 15px rgba(0,212,255,0.7); }
+
+        /* ─── Shimmer CTA button ─── */
+        @keyframes shimmerBg {
+            0% { background-position: 200% center; }
+            100% { background-position: -200% center; }
+        }
+        .shimmer-btn {
+            background: linear-gradient(90deg, #00b4d8, #00d4ff, #7dd3fc, #00d4ff, #00b4d8);
+            background-size: 300% auto;
+            animation: shimmerBg 4s linear infinite;
+            color: #020818;
+        }
+
+        .sphere-scene {
+            perspective: 900px;
+            perspective-origin: 50% 50%;
+        }
+        .sphere-wrapper {
+            position: relative;
+            transform-style: preserve-3d;
+            animation: sphereRotate 25s linear infinite;
+        }
+        @keyframes sphereRotate {
+            from { transform: rotateY(0deg); }
+            to   { transform: rotateY(360deg); }
+        }
+        .ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            transform-style: preserve-3d;
+        }
+        .ring-1 { animation: ring1 7s linear infinite; }
+        .ring-2 { animation: ring2 11s linear infinite; }
+        .ring-3 { animation: ring3 16s linear infinite reverse; }
+        @keyframes ring1 {
+            from { transform: rotateX(75deg) rotateZ(0deg); }
+            to   { transform: rotateX(75deg) rotateZ(360deg); }
+        }
+        @keyframes ring2 {
+            from { transform: rotateX(75deg) rotateZ(120deg); }
+            to   { transform: rotateX(75deg) rotateZ(480deg); }
+        }
+        @keyframes ring3 {
+            from { transform: rotateX(50deg) rotateY(20deg) rotateZ(240deg); }
+            to   { transform: rotateX(50deg) rotateY(20deg) rotateZ(600deg); }
+        }
+
+        /* Sphere inner pulse */
+        @keyframes spherePulse {
+            0%, 100% { box-shadow: 0 0 60px rgba(0,212,255,0.25), inset 0 0 40px rgba(0,212,255,0.08); }
+            50%       { box-shadow: 0 0 110px rgba(0,212,255,0.45), inset 0 0 70px rgba(0,212,255,0.15); }
+        }
+        .sphere-inner { animation: spherePulse 4s ease-in-out infinite; }
+
+        /* ─── Card 3D tilt ─── */
+        .card-3d {
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.4s ease;
+            transform-style: preserve-3d;
+        }
+        .card-3d:hover {
+            transform: perspective(800px) rotateX(-4deg) rotateY(4deg) translateY(-8px);
+            box-shadow: 0 30px 70px rgba(0,212,255,0.18), 0 0 0 1px rgba(0,212,255,0.2);
+        }
+        .card-3d-shine {
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            opacity: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 60%);
+            transition: opacity 0.4s ease;
             pointer-events: none;
-            z-index: 0;
-            opacity: 0.03;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
-        /* Refined Scrollbar */
-        
-         ::-webkit-scrollbar {
-            width: 6px;
+        .card-3d:hover .card-3d-shine { opacity: 1; }
+
+        /* ─── ECG ─── */
+        @keyframes ecgDash {
+            from { stroke-dashoffset: 1200; }
+            to   { stroke-dashoffset: 0; }
         }
-        
-         ::-webkit-scrollbar-track {
-            background: transparent;
+        .ecg-path {
+            stroke-dasharray: 1200;
+            stroke-dashoffset: 1200;
+            animation: ecgDash 3.5s linear infinite;
         }
-        
-         ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
+
+        /* ─── Aurora blobs ─── */
+        @keyframes blobFloat {
+            0%, 100% { transform: translate(0,0) scale(1); }
+            33%       { transform: translate(30px,-40px) scale(1.05); }
+            66%       { transform: translate(-20px, 20px) scale(0.97); }
         }
-        
-         ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+        .blob { animation: blobFloat var(--dur,15s) ease-in-out infinite var(--delay,0s); }
+
+        /* ─── Floating particles ─── */
+        @keyframes particleDrift {
+            0%, 100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.5; }
+            50%       { transform: translateY(-28px) translateX(12px) scale(1.2); opacity: 1; }
         }
+        .particle { animation: particleDrift var(--dur,7s) ease-in-out infinite var(--delay,0s); }
+
+        /* ─── Ping (live dot) ─── */
+        @keyframes pingRing {
+            0%   { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(2.4); opacity: 0; }
+        }
+        .ping-ring        { animation: pingRing 2.4s cubic-bezier(0,0,0.2,1) infinite; }
+        .ping-ring-delay  { animation: pingRing 2.4s cubic-bezier(0,0,0.2,1) infinite 1.2s; }
+
+        /* ─── Stat card ─── */
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(0,212,255,0.03));
+            border: 1px solid rgba(0,212,255,0.16);
+        }
+
+        /* ─── Card premium ─── */
+        .card-premium {
+            background: linear-gradient(145deg, rgba(13,31,60,0.92), rgba(10,20,40,0.96));
+            border: 1px solid rgba(0,212,255,0.18);
+        }
+
+        /* ─── Scrollbar ─── */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #020818; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.25); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,212,255,0.55); }
+
+        /* ─── scan line ─── */
+        @keyframes scanLine {
+            0%   { top: -5%; }
+            100% { top: 105%; }
+        }
+        .scan-line {
+            position: absolute; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,212,255,0.5), transparent);
+            animation: scanLine 6s ease-in-out infinite;
+            pointer-events: none;
+        }
+        /* ─── Orbit tiny dots ─── */
+        @keyframes orbitDot {
+            from { transform: rotate(0deg) translateX(130px) rotate(0deg); }
+            to   { transform: rotate(360deg) translateX(130px) rotate(-360deg); }
+        }
+        .orbit-dot-1 { animation: orbitDot 6s linear infinite; }
+        .orbit-dot-2 { animation: orbitDot 9s linear infinite reverse; }
     </style>
     <script type="importmap">
         { "imports": { "react-dom/": "https://esm.sh/react-dom@^19.2.4/", "lucide-react": "https://esm.sh/lucide-react@^0.563.0", "react/": "https://esm.sh/react@^19.2.4/", "react": "https://esm.sh/react@^19.2.4", "framer-motion": "https://esm.sh/framer-motion@^12.31.0",
-        "clsx": "https://esm.sh/clsx@^2.1.1", "tailwind-merge": "https://esm.sh/tailwind-merge@^2.3.0", "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.94.0" } }
+        "clsx": "https://esm.sh/clsx@^2.1.1", "tailwind-merge": "https://esm.sh/tailwind-merge@^2.3.0", "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.94.0", "@capacitor/core": "https://esm.sh/@capacitor/core@^7.4.0" } }
     </script>
     <link rel="stylesheet" href="/index.css">
 </head>
-
 <body>
-    <div class="bg-noise"></div>
-    <div id="root" class="relative z-10"></div>
+    <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
-
 </html>

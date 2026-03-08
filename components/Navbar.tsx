@@ -98,8 +98,8 @@ const Navbar: React.FC<NavbarProps> = ({ onHomeClick, isAuthenticated, userName,
           relative flex items-center justify-between px-3 pl-3 pr-4 md:pr-6 py-2.5 rounded-full 
           transition-all duration-500 w-full max-w-4xl
           ${scrolled 
-            ? 'bg-white/95 border border-white/50 shadow-lg shadow-black/[0.03] translate-y-0' 
-            : 'bg-white/80 border border-white/40 translate-y-0 shadow-sm'}
+            ? 'glass shadow-lg shadow-black/30' 
+            : 'glass-light shadow-sm'}
         `}>
           
           {/* Actions (Left in Code, Right in RTL) */}
@@ -117,19 +117,20 @@ const Navbar: React.FC<NavbarProps> = ({ onHomeClick, isAuthenticated, userName,
                 <div className="relative" ref={profileRef}>
                   <button 
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
-                    className="flex items-center gap-2 sm:gap-3 pl-1 pr-1 sm:pr-4 py-1 bg-white border border-gray-100 rounded-full hover:shadow-md transition-all group cursor-pointer"
+                    className="flex items-center gap-2 sm:gap-3 pl-1 pr-1 sm:pr-4 py-1 glass rounded-full hover:border-cyan-400 transition-all group cursor-pointer"
                   >
                      <div className="flex flex-col items-end leading-tight px-2">
-                        <span className="text-[10px] sm:text-xs font-bold text-dark max-w-[70px] sm:max-w-none truncate">{userName || 'الطالب'}</span>
-                        <span className="text-[8px] sm:text-[10px] text-gray-400 font-medium hidden sm:block">مشترك نشط</span>
+                        <span className="text-[10px] sm:text-xs font-bold text-white max-w-[70px] sm:max-w-none truncate">{userName || 'الطالب'}</span>
+                        <span className="text-[8px] sm:text-[10px] font-medium hidden sm:block" style={{ color: '#00d4ff' }}>مشترك نشط</span>
                      </div>
-                     <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-primary to-secondary p-[2px]">
-                        <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                            <User size={14} className="text-dark sm:w-4 sm:h-4" />
+                     <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full p-[2px]" style={{ background: 'linear-gradient(135deg, #00d4ff, #38bdf8)' }}>
+                        <div className="w-full h-full rounded-full flex items-center justify-center" style={{ background: '#0d1f3c' }}>
+                            <User size={14} className="text-cyan-400 sm:w-4 sm:h-4" />
                         </div>
                      </div>
-                     <ChevronDown size={14} className={`text-gray-400 transition-transform duration-300 hidden sm:block ${isProfileOpen ? 'rotate-180' : ''}`} />
+                     <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 hidden sm:block ${isProfileOpen ? 'rotate-180' : ''}`} />
                   </button>
+
 
                   {/* Profile Dropdown */}
                   <AnimatePresence>
@@ -139,18 +140,18 @@ const Navbar: React.FC<NavbarProps> = ({ onHomeClick, isAuthenticated, userName,
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
                             transition={{ duration: 0.2 }}
-                            className="absolute top-full right-0 sm:left-0 mt-3 w-48 sm:w-56 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden p-2 z-50 origin-top-right sm:origin-top-left"
+                            className="absolute top-full right-0 sm:left-0 mt-3 w-48 sm:w-56 glass rounded-2xl shadow-xl overflow-hidden p-2 z-50 origin-top-right sm:origin-top-left"
                         >
-                             <div className="p-3 bg-gray-50 rounded-xl mb-2 sm:hidden text-center">
-                                <span className="block font-bold text-dark text-sm">{userName}</span>
-                                <span className="text-xs text-green-500">متصل</span>
+                             <div className="p-3 rounded-xl mb-2 sm:hidden text-center" style={{ background: 'rgba(0,212,255,0.05)' }}>
+                                <span className="block font-bold text-white text-sm">{userName}</span>
+                                <span className="text-xs" style={{ color: '#00d4ff' }}>متصل</span>
                              </div>
                              
                              <button 
                                 onClick={onLogoutClick}
-                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors text-xs sm:text-sm font-bold group"
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-900/20 transition-colors text-xs sm:text-sm font-bold group"
                              >
-                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-100 flex items-center justify-center group-hover:bg-red-200 transition-colors">
+                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-900/30 flex items-center justify-center group-hover:bg-red-900/50 transition-colors">
                                     <LogOut size={14} />
                                 </div>
                                 تسجيل الخروج
@@ -162,7 +163,8 @@ const Navbar: React.FC<NavbarProps> = ({ onHomeClick, isAuthenticated, userName,
               ) : (
                 <button 
                   onClick={onAuthClick}
-                  className="flex px-4 sm:px-5 h-10 sm:h-11 rounded-full bg-dark text-white items-center justify-center hover:scale-105 transition-transform shadow-md gap-2 font-bold text-xs sm:text-sm"
+                  className="flex px-4 sm:px-5 h-10 sm:h-11 rounded-full items-center justify-center hover:scale-105 transition-transform shadow-glow gap-2 font-bold text-xs sm:text-sm text-dark"
+                  style={{ background: 'linear-gradient(135deg, #00d4ff, #38bdf8)' }}
                 >
                    <LogIn size={14} className="sm:w-4 sm:h-4" />
                    <span>دخول</span>
@@ -207,11 +209,11 @@ const Navbar: React.FC<NavbarProps> = ({ onHomeClick, isAuthenticated, userName,
 
           {/* Logo (Right in Code, Left in RTL) */}
           <div className="flex items-center gap-3 cursor-pointer group" onClick={onHomeClick}>
-             <span className="font-bold text-lg tracking-tight text-dark hidden sm:block font-cairo">
-               نبض <span className="text-primary">التمريض</span>
+             <span className="font-bold text-lg tracking-tight text-white hidden sm:block font-cairo">
+               نبض <span className="text-neon">التمريض</span>
              </span>
-             <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-primary to-secondary p-[2px] shadow-glow group-hover:rotate-12 transition-transform duration-500">
-               <div className="w-full h-full rounded-full bg-white overflow-hidden flex items-center justify-center">
+             <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full p-[2px] shadow-glow group-hover:rotate-12 transition-transform duration-500" style={{ background: 'linear-gradient(135deg, #00d4ff, #38bdf8)' }}>
+               <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center" style={{ background: '#0d1f3c' }}>
                  <img src={logoUrl} alt="logo" className="w-full h-full object-cover object-left" />
                </div>
              </div>
@@ -239,7 +241,7 @@ const Navbar: React.FC<NavbarProps> = ({ onHomeClick, isAuthenticated, userName,
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="fixed top-24 left-4 right-4 z-50 bg-white/95 rounded-[2rem] shadow-2xl p-4 border border-white/50 ring-1 ring-black/5 md:hidden overflow-hidden"
+              className="fixed top-24 left-4 right-4 z-50 glass rounded-[2rem] shadow-2xl p-4 md:hidden overflow-hidden"
             >
                <div className="flex flex-col gap-2">
                  {['الرئيسية', 'المسارات', 'المجتمع'].map((item, i) => (
@@ -250,8 +252,9 @@ const Navbar: React.FC<NavbarProps> = ({ onHomeClick, isAuthenticated, userName,
                         setIsMenuOpen(false);
                       }}
                       className={`w-full text-right px-6 py-4 rounded-2xl text-base font-bold transition-all flex items-center justify-between group ${
-                         i === 0 ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'hover:bg-gray-50 text-dark'
+                         i === 0 ? 'text-dark shadow-glow' : 'text-white hover:bg-white/5'
                       }`}
+                      style={i === 0 ? { background: 'linear-gradient(135deg, #00d4ff, #38bdf8)' } : {}}
                     >
                       {item}
                       {i === 0 && <Sparkles size={16} fill="currentColor" />}

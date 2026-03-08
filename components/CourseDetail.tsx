@@ -19,9 +19,10 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ course, onBack, onLessonSel
         <div className="flex flex-col sm:flex-row items-start gap-4 mb-8 sm:mb-12">
           <button
             onClick={onBack}
-            className="mt-1 w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-dark hover:text-white transition-all shadow-sm"
+            className="mt-1 px-4 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center gap-2 hover:bg-dark hover:text-white transition-all shadow-sm font-bold text-sm"
           >
-            <ArrowRight size={20} />
+            <ArrowRight size={18} />
+            رجوع
           </button>
 
           <div>
