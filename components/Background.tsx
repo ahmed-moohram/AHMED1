@@ -1,11 +1,21 @@
 import React from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
-const Background: React.FC = () => (
+const Background: React.FC = () => {
+  const { scrollY } = useScroll();
+  
+  // Parallax translation mapping (Scroll 0-1000 maps to Translate 0-value)
+  const blobsY = useTransform(scrollY, [0, 1000], [0, 150]);
+  const ecgY = useTransform(scrollY, [0, 1000], [0, 50]);
+  const particlesY = useTransform(scrollY, [0, 1000], [0, -180]);
+
+  return (
   <div
     className="fixed inset-0 z-0 pointer-events-none overflow-hidden gpu"
     style={{ background: 'linear-gradient(160deg, #020818 0%, #041229 50%, #020818 100%)' }}
   >
     {/* ── Aurora blobs (pure CSS, GPU-accelerated) ── */}
+    <motion.div className="absolute inset-0" style={{ y: blobsY }}>
     <div
       className="blob absolute rounded-full gpu"
       style={{
@@ -33,6 +43,7 @@ const Background: React.FC = () => (
         '--dur': '14s', '--delay': '-3s',
       } as React.CSSProperties}
     />
+    </motion.div>
 
     {/* ── Subtle dot-grid ── */}
     <div
@@ -44,7 +55,7 @@ const Background: React.FC = () => (
     />
 
     {/* ── ECG heartbeat line (center) ── */}
-    <div className="absolute inset-x-0 opacity-25" style={{ top: '42%' }}>
+    <motion.div className="absolute inset-x-0 opacity-25" style={{ top: '42%', y: ecgY }}>
       <svg width="100%" height="64" viewBox="0 0 1440 64" preserveAspectRatio="none">
         <polyline
           className="ecg-path"
@@ -56,9 +67,10 @@ const Background: React.FC = () => (
           strokeLinejoin="round"
         />
       </svg>
-    </div>
+    </motion.div>
 
     {/* ── Floating micro-particles ── */}
+    <motion.div className="absolute inset-0" style={{ y: particlesY }}>
     {([
       { x:'12%',  y:'18%', s:3, dur:'7s',  del:'0s'   },
       { x:'80%',  y:'12%', s:4, dur:'9s',  del:'-2s'  },
@@ -80,6 +92,7 @@ const Background: React.FC = () => (
         } as React.CSSProperties}
       />
     ))}
+    </motion.div>
 
     {/* ── Scan line ── */}
     <div className="absolute inset-0 overflow-hidden opacity-40">
@@ -92,6 +105,7 @@ const Background: React.FC = () => (
     <div className="absolute bottom-0 left-0 w-[35vw] h-[35vh] pointer-events-none"
       style={{ background: 'radial-gradient(ellipse at bottom left, rgba(0,160,220,0.1) 0%, transparent 65%)' }} />
   </div>
-);
+  );
+};
 
 export default Background;

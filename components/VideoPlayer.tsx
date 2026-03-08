@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Play, FileText, Mic, Download, ExternalLink, Headphones } from 'lucide-react';
+import { ArrowRight, Play, FileText, Mic, Download, ExternalLink, Headphones, Maximize, Minimize } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { Course, Lesson } from '../types';
 
@@ -14,8 +14,28 @@ interface VideoPlayerProps {
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack, userProfile }) => {
   const [resourceViewer, setResourceViewer] = useState<null | { kind: 'pdf' | 'audio'; title: string; url: string }>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
+  const toggleFullScreen = async () => {
+    if (!document.fullscreenElement) {
+      if (containerRef.current?.requestFullscreen) {
+        await containerRef.current.requestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      }
+    }
+  };
   const openExternalUrl = async (url: string) => {
     const isNative = Capacitor.isNativePlatform?.() ?? false;
     if (isNative) {
@@ -121,7 +141,52 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ course, lesson, onBack, userP
 
           {/* Main Content (Video & Description) - Spans 2 cols on desktop */}
           <div className="lg:col-span-2 space-y-8">
+            {/* Video Player Container */}
+            {lesson.videoUrl && (
+              <div
+                ref={containerRef}
+                className="relative bg-black rounded-[2rem] overflow-hidden shadow-2xl group border border-gray-800 flex items-center justify-center cursor-crosshair"
+                style={{ aspectRatio: '16/9' }}
+              >
+                {/* Iframe for Google Drive / YouTube */}
+                <iframe
+                  src={isDriveUrl(lesson.videoUrl) ? toDrivePreviewUrl(lesson.videoUrl) : getYouTubeEmbedUrl(lesson.videoUrl)}
+                  allow="autoplay; encrypted-media; fullscreen"
+                  allowFullScreen
+                  className="w-full h-full border-0 absolute inset-0 z-0"
+                  title={lesson.title}
+                />
 
+                {/* Top Overlay to block Google Drive Pop-out button */}
+                {isDriveUrl(lesson.videoUrl) && (
+                  <div className="absolute top-0 right-0 left-0 h-14 z-10 bg-transparent cursor-not-allowed" title="محمي" />
+                )}
+
+                {/* Watermark Overlay (Hard to remove, spans across the video) */}
+                {userProfile && (
+                  <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-16 sm:gap-32 w-[150%] h-[150%] opacity-[0.25] rotate-[-25deg] mix-blend-overlay">
+                      {Array.from({ length: 15 }).map((_, i) => (
+                        <p key={i} className="text-xl sm:text-2xl font-black text-white whitespace-nowrap drop-shadow-md">
+                          {userProfile.student_id ? `${userProfile.phone} - ${userProfile.student_id}` : 'أحمد محرم'}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom Fullscreen Toggle */}
+                <div className="absolute bottom-5 right-5 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <button
+                    onClick={toggleFullScreen}
+                    className="p-3 bg-black/60 hover:bg-black/80 text-white rounded-xl backdrop-blur-md transition-colors shadow-lg border border-white/10"
+                    title={isFullscreen ? 'تصغير الشاشة' : 'تكبير الشاشة'}
+                  >
+                    {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Description */}
             <div className="bg-white rounded-[2rem] p-5 sm:p-8 border border-gray-100 shadow-sm">

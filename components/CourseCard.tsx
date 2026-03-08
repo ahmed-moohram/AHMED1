@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { ArrowUpLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Course } from '../types';
 
 interface CourseCardProps {
@@ -9,18 +10,23 @@ interface CourseCardProps {
   index: number;
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({ course, onClick }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ course, onClick, index }) => {
   const tags = Array.isArray((course as any)?.tags) ? (course as any).tags : [];
   const lessonsCount = Array.isArray((course as any)?.lessons) ? (course as any).lessons.length : 0;
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.6, delay: Math.min(index * 0.1, 0.4), ease: [0.22, 1, 0.36, 1] }}
       onClick={() => onClick(course)}
       className="card-3d group relative cursor-pointer rounded-[1.5rem] overflow-hidden"
       style={{
         background: 'linear-gradient(145deg, rgba(13,31,60,0.95), rgba(8,18,38,0.98))',
         border: '1px solid rgba(0,212,255,0.15)',
         boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+        willChange: 'transform, opacity'
       }}
     >
       {/* Shine overlay */}
@@ -131,7 +137,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onClick }) => {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

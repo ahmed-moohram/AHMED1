@@ -58,10 +58,14 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ course, onBack, onLessonSel
                 />
 
                 {/* Play Button or Lock */}
-                <div className="absolute inset-0 z-20 flex items-center justify-center">
-                  {lesson.isLocked && (
-                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+                  {lesson.isLocked ? (
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
                       <Lock className="text-white" size={24} />
+                    </div>
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-primary/80 flex items-center justify-center backdrop-blur-md shadow-lg shadow-primary/30 group-hover:scale-110 group-hover:bg-primary transition-all duration-300">
+                      <Play className="text-white ml-1" size={28} fill="currentColor" />
                     </div>
                   )}
                 </div>
@@ -87,17 +91,23 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ course, onBack, onLessonSel
                 </h3>
 
                 {/* Resources Icons Preview */}
-                {!lesson.isLocked && (lesson.pdfUrls || lesson.audioUrls) && (
-                  <div className="flex gap-2 mt-4 pt-4 border-t border-gray-50">
+                {!lesson.isLocked && (lesson.videoUrl || lesson.pdfUrls || lesson.audioUrls) && (
+                  <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-50">
+                    {lesson.videoUrl && (
+                      <div className="flex items-center gap-1 text-[10px] font-bold bg-blue-50 text-blue-600 px-2.5 py-1 rounded-md">
+                        <Play size={12} fill="currentColor" />
+                        <span>فيديو</span>
+                      </div>
+                    )}
                     {lesson.pdfUrls && lesson.pdfUrls.length > 0 && (
-                      <div className="flex items-center gap-1 text-xs text-gray-400">
-                        <FileText size={14} />
+                      <div className="flex items-center gap-1 text-[10px] font-bold bg-red-50 text-red-600 px-2.5 py-1 rounded-md">
+                        <FileText size={12} />
                         <span>{lesson.pdfUrls.length} ملفات</span>
                       </div>
                     )}
                     {lesson.audioUrls && lesson.audioUrls.length > 0 && (
-                      <div className="flex items-center gap-1 text-xs text-gray-400">
-                        <Mic size={14} />
+                      <div className="flex items-center gap-1 text-[10px] font-bold bg-purple-50 text-purple-600 px-2.5 py-1 rounded-md">
+                        <Mic size={12} />
                         <span>صوتيات</span>
                       </div>
                     )}

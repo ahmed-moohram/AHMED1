@@ -454,15 +454,7 @@ function App() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                 {courses.length > 0 ? courses.map((course, index) => (
-                  <motion.div
-                    key={course.id}
-                    initial={{ opacity: 0, y: 40 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.1 }}
-                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: Math.min(index * 0.1, 0.35) }}
-                  >
-                    <CourseCard course={course} onClick={handleCourseClick} index={index} />
-                  </motion.div>
+                  <CourseCard key={course.id} course={course} onClick={handleCourseClick} index={index} />
                 )) : (
                   <div className="col-span-full text-center py-20 text-slate-600 font-bold">
                     لا توجد كورسات متاحة حالياً
