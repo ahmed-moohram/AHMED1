@@ -28,6 +28,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [studentSearchDraft, setStudentSearchDraft] = useState('');
     const [studentSearch, setStudentSearch] = useState('');
+    const [studentSortOption, setStudentSortOption] = useState<'newest' | 'oldest' | 'name_asc' | 'id_asc'>('newest');
     const [copiedUserId, setCopiedUserId] = useState<string | null>(null);
     const [passwordByUserId, setPasswordByUserId] = useState<Record<string, string>>({});
     const [settingPasswordUserId, setSettingPasswordUserId] = useState<string | null>(null);
@@ -209,14 +210,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
 
 
 
-    const fetchStudents = async ({ page, reset, search }: { page: number; reset: boolean; search: string }) => {
+    const fetchStudents = async ({ page, reset, search, sortOption = 'newest' }: { page: number; reset: boolean; search: string; sortOption?: string }) => {
         const seq = ++studentsFetchSeq.current;
         setStudentsLoading(true);
         try {
             if (!isSupabaseConfigured) {
                 const data: any = [
-                    { id: '1', full_name: 'طالب تجريبي 1', student_id: '12345', role: 'student' },
-                    { id: '2', full_name: 'طالب تجريبي 2', student_id: '67890', role: 'student' }
+                    { id: '1', full_name: 'طالب تجريبي 1', student_id: '12345', role: 'student', created_at: new Date().toISOString() },
+                    { id: '2', full_name: 'طالب تجريبي 2', student_id: '67890', role: 'student', created_at: new Date().toISOString() }
                 ];
                 if (seq !== studentsFetchSeq.current) return;
                 setStudents(data);
@@ -244,9 +245,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                     query = query.or(`full_name.ilike.%${safe}%,student_id.ilike.%${safe}%,role.ilike.%${safe}%`);
                 }
 
+                if (sortOption === 'newest') {
+                    query = query.order('created_at', { ascending: false });
+                } else if (sortOption === 'oldest') {
+                    query = query.order('created_at', { ascending: true });
+                } else if (sortOption === 'name_asc') {
+                    query = query.order('full_name', { ascending: true });
+                } else if (sortOption === 'id_asc') {
+                    query = query.order('student_id', { ascending: true });
+                } else {
+                    query = query.order('created_at', { ascending: false }); // Default
+                }
+
                 query = query
-                    .order('full_name', { ascending: true })
-                    .order('id', { ascending: true })
+                    .order('id', { ascending: true }) // Tie-breaker
                     .range(from, to);
                 return await query;
             };
@@ -254,7 +266,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
             let data: any[] | null = null;
             let count: number | null = null;
 
-            const { data: d1, error: e1, count: c1 } = await runQuery('id, full_name, student_id, role, is_banned, ban_reason, device_id');
+            const { data: d1, error: e1, count: c1 } = await runQuery('id, full_name, student_id, role, is_banned, ban_reason, device_id, created_at');
             if (!e1) {
                 data = (d1 as any[]) || [];
                 count = (c1 as any) ?? null;
@@ -299,24 +311,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
         }
     };
 
-    const resetStudentsAndFetch = (search: string) => {
+    const resetStudentsAndFetch = (overrideSearch?: string) => {
         setStudents([]);
         setStudentsTotal(null);
         setStudentsPage(0);
         setStudentsHasMore(true);
-        fetchStudents({ page: 0, reset: true, search });
+        if (overrideSearch !== undefined) {
+            setStudentSearch(overrideSearch);
+            setStudentSearchDraft(overrideSearch);
+            fetchStudents({ page: 0, reset: true, search: overrideSearch, sortOption: studentSortOption });
+        } else {
+            fetchStudents({ page: 0, reset: true, search: studentSearch, sortOption: studentSortOption });
+        }
     };
 
     // Fetch Data
     useEffect(() => {
         fetchCourses();
         if (activeTab === 'students') {
-            resetStudentsAndFetch(studentSearch);
+            fetchStudents({ page: 0, reset: true, search: studentSearch, sortOption: studentSortOption });
         }
         if (activeTab === 'codes') {
             fetchCodes();
         }
-    }, [activeTab, showAllUsers]);
+    }, [activeTab, showAllUsers, studentSortOption]);
 
 
 
@@ -829,6 +847,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, initialTab, s
                                 <p className="text-gray-500 text-sm">عرض وإدارة حسابات الطلاب</p>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                <select
+                                    value={studentSortOption}
+                                    onChange={(e) => setStudentSortOption(e.target.value as any)}
+                                    className="px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 font-bold text-sm text-gray-900 cursor-pointer"
+                                >
+                                    <option value="newest">الأحدث أولاً</option>
+                                    <option value="oldest">الأقدم أولاً</option>
+                                    <option value="name_asc">أبجدي (أ-ي)</option>
+                                    <option value="id_asc">الرقم التعريفي (الأصغر)</option>
+                                </select>
+
                                 <input
                                     value={studentSearchDraft}
                                     onChange={(e) => setStudentSearchDraft(e.target.value)}

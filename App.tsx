@@ -11,12 +11,13 @@ import CourseDetail from './components/CourseDetail';
 import Auth from './components/Auth';
 import AdminDashboard from './components/AdminDashboard';
 import SupportChatWidget from './components/SupportChatWidget';
+import MohramPage from './components/MohramPage';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Course, Lesson, ViewState } from './types';
 import { COURSES as MOCK_COURSES } from './constants';
 
 function App() {
-  const [viewState, setViewState] = useState<ViewState>('HOME');
+  const [viewState, setViewState] = useState<ViewState | 'MOHRAM_PAGE'>('HOME');
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -54,6 +55,14 @@ function App() {
   };
 
   useEffect(() => {
+    try {
+      const path = window.location.pathname.replace(/\/+$/, '');
+      if (path === '/mohram') {
+        setViewState('MOHRAM_PAGE');
+        return;
+      }
+    } catch { }
+
     if (!isAhmedMohramPath()) return;
     if (!isAuthenticated) { setViewState('AUTH'); return; }
     if (isMasterAdmin) { setViewState('AHMED_MOHRAM'); return; }
@@ -225,6 +234,7 @@ function App() {
   const handleBackToCourse = () => { setViewState('COURSE_DETAIL'); setSelectedLesson(null); };
 
   /* ─── Early-return views ─── */
+  if (viewState === 'MOHRAM_PAGE') return <MohramPage />;
   if (viewState === 'AUTH') return <Auth onLoginSuccess={handleLoginSuccess} onBack={() => setViewState('HOME')} />;
 
   if (viewState === 'BANNED') return (

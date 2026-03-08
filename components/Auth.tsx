@@ -246,12 +246,12 @@ const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBack }) => {
         const email = `${cleanId}@academy.local`;
         const cleanPhone = phoneNumber.replace(/[^0-9]/g, '').trim();
         
-        // Validate phone: must start with 0 and be exactly 11 digits
+        // Validate phone: must start with 01 and be exactly 11 digits
         if (!cleanPhone || cleanPhone.length !== 11) {
           throw new Error('رقم التلفون لازم يكون 11 رقم');
         }
-        if (!cleanPhone.startsWith('0')) {
-          throw new Error('رقم التلفون لازم يبدأ ب 0');
+        if (!cleanPhone.startsWith('01')) {
+          throw new Error('رقم التلفون لازم يبدأ بـ 01');
         }
 
         // --- Validate Activation Code ---
